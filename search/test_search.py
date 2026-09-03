@@ -1,5 +1,7 @@
 import sys
 
+sys.stdout.reconfigure(encoding="utf-8")
+
 from search.engine import search_image
 
 
@@ -13,17 +15,17 @@ def main():
 
     print("\n=== SEARCH RESULT ===")
     print(f"Success: {result['success']}")
-    print(f"Candidates found: {len(result['candidates'])}")
+    print(f"Candidates: {len(result['candidates'])}")
 
-    print("\n=== TOP RESULTS ===")
+    print("\n=== FIRST 10 RESULTS ===")
 
-    for candidate in result["candidates"][:10]:
-        print("\n---")
-        print(f"Provider: {candidate['provider']}")
-        print(f"Rank: {candidate['search_rank']}")
-        print(f"Title: {candidate['title']}")
-        print(f"Source: {candidate['source']}")
-        print(f"Page URL: {candidate['page_url']}")
+    for index, candidate in enumerate(result["candidates"][:10], start=1):
+        print(f"\n{index}. [{candidate['provider']}]")
+        print(f"   Source: {candidate['source'] or 'Unknown'}")
+        print(f"   Title: {candidate['title'] or 'Unknown'}")
+        print(f"   Author: {candidate['author'] or 'Unknown'}")
+        print(f"   Rank: {candidate['search_rank']}")
+        print(f"   Page: {candidate['page_url']}")
 
 
 if __name__ == "__main__":
