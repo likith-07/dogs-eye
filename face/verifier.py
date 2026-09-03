@@ -1,3 +1,4 @@
+import cv2
 import numpy as np
 from typing import Dict, Any
 from face.processor import FaceProcessor
@@ -44,3 +45,27 @@ class FaceVerifier:
             verified=bool(is_match),
             similarity_score=similarity_score
         )
+    # In face/verifier.py
+    def has_face(self, img_path: str) -> bool:
+        """
+        Checks if at least one face is present in the target image.
+        """
+        try:
+            # Option A: If your class uses self.app, self.model, or self.detector:
+            model = getattr(self, 'app', None) or getattr(self, 'model', None) or getattr(self, 'detector', None)
+            
+            if model is not None:
+                img = cv2.imread(img_path)
+                if img is None:
+                    return False
+                faces = model.get(img)
+                return len(faces) > 0
+            
+            # Option B: Fallback using verify_faces against itself
+            result = self.verify_faces(img_path, img_path)
+            if result.get("error") and "No face detected" in result["error"]:
+                return False
+            return True
+            
+        except Exception:
+            return False
