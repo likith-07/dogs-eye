@@ -124,3 +124,16 @@ The module does not force a match when external search fails. Downstream face ve
 This helps avoid false positives and allows the final system to return **NO VERIFIED MATCH** when no candidate can be verified.
 
 Provider results can vary between runs due to external indexing changes; the module always searches live rather than caching or hardcoding results.
+## Prerequisites & Environment Setup
+
+### 1. Windows C++ Runtime (Required for ONNX/InsightFace)
+If running on Windows, you must install the Microsoft Visual C++ 2015–2022 Redistributable before running the project:
+* Download and run: [VC_redist.x64.exe](https://aka.ms/vs/17/release/vc_redist.x64.exe)
+
+### 2. Python Environment Setup
+Ensure you are using **Python 3.11** in a virtual environment:
+
+```cmd
+python -m venv env
+env\Scripts\activate
+pip install -r requirements.txt
