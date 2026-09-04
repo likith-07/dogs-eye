@@ -117,7 +117,7 @@ class IntegratedPipeline:
             "success": search_response.get("success", True),
             "target_image": target_image_path,
             "total_candidates_found": len(candidates),
-            "total_candidates_evaluated": len(verified_results),
+            "total_candidates_evaluated": evaluated_count,
             "verified_matches_count": sum(1 for r in verified_results if r["verified"]),
             "results": verified_results
         }

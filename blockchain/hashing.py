@@ -2,39 +2,52 @@ import hashlib
 import json
 
 
-def calculate_hash(data: dict) -> str:
+def calculate_hash(
+    data
+) -> str:
     """
-    Convert a dictionary into canonical JSON and
-    return its SHA-256 hash.
+    Creates a deterministic SHA-256 hash
+    from Python data.
     """
 
-    canonical_data = json.dumps(
+    serialized_data = json.dumps(
         data,
         sort_keys=True,
-        separators=(",", ":"),
-        ensure_ascii=False
+        separators=(",", ":")
     )
 
     return hashlib.sha256(
-        canonical_data.encode("utf-8")
+        serialized_data.encode(
+            "utf-8"
+        )
     ).hexdigest()
 
 
-def hash_file(file_path: str) -> str:
+def hash_file(
+    file_path: str
+) -> str:
     """
-    Generate a SHA-256 hash for a file.
-    Useful for hashing the original input image.
+    Creates a SHA-256 hash of a file.
     """
 
     sha256 = hashlib.sha256()
 
-    with open(file_path, "rb") as file:
+    with open(
+        file_path,
+        "rb"
+    ) as file:
+
         while True:
-            chunk = file.read(8192)
+
+            chunk = file.read(
+                8192
+            )
 
             if not chunk:
                 break
 
-            sha256.update(chunk)
+            sha256.update(
+                chunk
+            )
 
     return sha256.hexdigest()

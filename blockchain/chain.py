@@ -1,6 +1,12 @@
-from datetime import datetime, timezone
+from datetime import (
+    datetime,
+    timezone
+)
 
-from blockchain.hashing import calculate_hash
+from blockchain.hashing import (
+    calculate_hash
+)
+
 from blockchain.storage import (
     load_chain,
     save_chain
@@ -11,18 +17,34 @@ class Blockchain:
 
     def __init__(
         self,
-        storage_path: str = "data/blockchain.json"
+        storage_path: str = (
+            "data/blockchain.json"
+        )
     ):
 
-        self.storage_path = storage_path
+        self.storage_path = (
+            storage_path
+        )
 
         loaded_chain = load_chain(
             self.storage_path
         )
 
+
+        # --------------------------------
+        # LOAD EXISTING CHAIN
+        # --------------------------------
+
         if loaded_chain:
 
-            self.chain = loaded_chain
+            self.chain = (
+                loaded_chain
+            )
+
+
+        # --------------------------------
+        # CREATE NEW CHAIN
+        # --------------------------------
 
         else:
 
@@ -33,13 +55,16 @@ class Blockchain:
             self.save()
 
 
-    # =========================================================
+    # ====================================
     # GENESIS BLOCK
-    # =========================================================
+    # ====================================
 
-    def create_genesis_block(self):
+    def create_genesis_block(
+        self
+    ) -> dict:
 
         block = {
+
             "index": 0,
 
             "timestamp": datetime.now(
@@ -47,32 +72,48 @@ class Blockchain:
             ).isoformat(),
 
             "evidence": {
-                "type": "GENESIS_BLOCK"
+                "type":
+                    "GENESIS_BLOCK"
             },
 
             "previous_hash": "0"
         }
 
-        block["block_hash"] = calculate_hash(
+
+        block["block_hash"] = (
+            calculate_hash(
+                block
+            )
+        )
+
+
+        self.chain.append(
             block
         )
 
-        self.chain.append(block)
+
+        return block
 
 
-    # =========================================================
+    # ====================================
     # ADD BLOCK
-    # =========================================================
+    # ====================================
 
     def add_block(
         self,
         evidence: dict
     ) -> dict:
 
-        previous_block = self.chain[-1]
+        previous_block = (
+            self.chain[-1]
+        )
+
 
         block = {
-            "index": len(self.chain),
+
+            "index": len(
+                self.chain
+            ),
 
             "timestamp": datetime.now(
                 timezone.utc
@@ -81,120 +122,106 @@ class Blockchain:
             "evidence": evidence,
 
             "previous_hash":
-                previous_block["block_hash"]
+                previous_block[
+                    "block_hash"
+                ]
         }
 
-        block["block_hash"] = calculate_hash(
+
+        block["block_hash"] = (
+            calculate_hash(
+                block
+            )
+        )
+
+
+        self.chain.append(
             block
         )
 
-        self.chain.append(block)
 
         self.save()
+
 
         return block
 
 
-    # =========================================================
+    # ====================================
     # SAVE
-    # =========================================================
+    # ====================================
 
-    def save(self):
+    def save(
+        self
+    ) -> None:
 
         save_chain(
-            self.chain,
-            self.storage_path
+            self.storage_path,
+            self.chain
         )
 
 
-    # =========================================================
-    # GET BLOCK
-    # =========================================================
-
-    def get_block(
-        self,
-        index: int
-    ):
-
-        if (
-            index < 0
-            or
-            index >= len(self.chain)
-        ):
-            return None
-
-        return self.chain[index]
-
-
-    # =========================================================
-    # GET LATEST BLOCK
-    # =========================================================
-
-    def get_latest_block(self):
-
-        return self.chain[-1]
-
-
-    # =========================================================
+    # ====================================
     # VALIDATE CHAIN
-    # =========================================================
+    # ====================================
 
-    def is_chain_valid(self) -> bool:
+    def is_chain_valid(
+        self
+    ) -> bool:
 
-        for i in range(
-            len(self.chain)
+        for index, block in enumerate(
+            self.chain
         ):
 
-            current_block = self.chain[i]
+            # Create copy without stored hash
 
-            stored_hash = current_block.get(
-                "block_hash"
+            block_data = {
+                key: value
+                for key, value in block.items()
+                if key != "block_hash"
+            }
+
+
+            recalculated_hash = (
+                calculate_hash(
+                    block_data
+                )
             )
 
-            block_copy = current_block.copy()
 
-            block_copy.pop(
-                "block_hash",
-                None
-            )
-
-            recalculated_hash = calculate_hash(
-                block_copy
-            )
-
-            # Check if block itself was modified
+            # Check block contents
 
             if (
-                stored_hash
-                !=
                 recalculated_hash
+                != block["block_hash"]
             ):
+
                 return False
 
 
-            # Genesis block does not have
-            # a real previous block
+            # Genesis block needs no
+            # previous block validation
 
-            if i == 0:
+            if index == 0:
+
                 continue
 
 
-            previous_block = self.chain[
-                i - 1
-            ]
+            previous_block = (
+                self.chain[
+                    index - 1
+                ]
+            )
 
 
-            # Check previous hash link
+            # Check chain link
 
             if (
-                current_block[
-                    "previous_hash"
-                ]
-                !=
-                previous_block[
+                block["previous_hash"]
+                != previous_block[
                     "block_hash"
                 ]
             ):
+
                 return False
 
 
