@@ -9,6 +9,7 @@ SOCIAL_MEDIA_DOMAINS = {
     "tiktok.com",
     "threads.com",
     "youtube.com",
+    "linkedin.com",
 }
 
 
