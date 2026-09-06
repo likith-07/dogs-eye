@@ -7,6 +7,7 @@ from search.normalizer import normalize_candidates
 from search.providers.provider_primary import search as searchapi_search
 from search.providers.provider_secondary import search as facefinder_search
 import time
+import requests 
 
 def get_candidate_url(candidate: Any) -> str:
     """
@@ -105,8 +106,7 @@ def interleave_candidates(
 
 
 
-import time
-import requests
+
 
 def run_facefinder(image_path: str, max_retries: int = 3, max_poll_attempts: int = 15) -> List[Any]:
     """
