@@ -5,7 +5,7 @@ from search.engine import search_image
 
 def main():
 
-    image_path = "data/inputs/nick.jpg"
+    image_path = "data/inputs/nihal2.jpg"
 
     result = search_image(
         image_path=image_path,
