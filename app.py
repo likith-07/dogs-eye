@@ -9,7 +9,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from main import process_image
-from username_investigation.investigator import investigate_username
+from username_investigation.investigator import investigate_identity
 
 
 # ============================================================
@@ -47,7 +47,7 @@ app.add_middleware(
 
 
 class UsernameInvestigationRequest(BaseModel):
-    confirmed_url: str
+    target_username: str 
 
 
 # ============================================================
@@ -200,9 +200,10 @@ async def investigate_image(file: UploadFile = File(...)):
 
 
 @app.post("/api/username-investigate")
-async def run_username_expansion(payload: UsernameInvestigationRequest):
-    if not payload.confirmed_url:
-        raise HTTPException(status_code=400, detail="Missing confirmed_url parameter.")
+async def run_osint_correlation(payload: UsernameInvestigationRequest):
+    if not payload.target_username:
+        raise HTTPException(status_code=400, detail="Missing target_username parameter.")
 
-    result = investigate_username(payload.confirmed_url)
+    # We now pass the verified username directly to the investigator
+    result = investigate_identity(payload.target_username)
     return result

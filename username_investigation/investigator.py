@@ -1,31 +1,22 @@
 from typing import Dict, Any
-from username_investigation.extractor import extract_username
-from username_investigation.variants import generate_username_variants
-from username_investigation.platform_search import build_platform_candidates
+from username_investigation.dorking import sweep_external_endpoints
+from username_investigation.correlation import score_identity
 
+def investigate_identity(target_handle: str) -> Dict[str, Any]:
+    """Master orchestrator for the identity correlation pipeline."""
+    target_handle = target_handle.strip().replace("@", "")
 
-def investigate_username(confirmed_url: str) -> Dict[str, Any]:
-    """
-    Orchestrates extraction, variant generation, and platform profile lookup.
-    """
-    extracted_handle = extract_username(confirmed_url)
+    # 1. Broad Discovery (WhatsMyName External Sweep)
+    raw_discovered = sweep_external_endpoints(target_handle)
 
-    if not extracted_handle:
-        return {
-            "success": False,
-            "error": f"Could not extract username from: {confirmed_url}",
-            "original_url": confirmed_url,
-            "results": []
-        }
-
-    variants = generate_username_variants(extracted_handle)
-    candidates = build_platform_candidates(variants)
+    # 2. Identity Verification (Correlation Scoring)
+    verified_results = [
+        score_identity(target_handle, profile) for profile in raw_discovered
+    ]
 
     return {
         "success": True,
-        "original_url": confirmed_url,
-        "extracted_username": extracted_handle,
-        "total_variants": len(variants),
-        "total_candidates": len(candidates),
-        "results": candidates
+        "extracted_username": target_handle,
+        "total_discovered": len(verified_results),
+        "results": verified_results
     }

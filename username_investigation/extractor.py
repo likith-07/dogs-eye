@@ -8,35 +8,24 @@ PLATFORM_PATTERNS = {
     "threads": r"threads\.(?:com|net)/(?:post/)?@?([a-zA-Z0-9_.]+)",
     "youtube": r"youtube\.com/(?:@|user/|c/|channel/)?([a-zA-Z0-9_.-]+)",
     "facebook": r"facebook\.com/(?:people/|pg/|posts/|videos/)?([a-zA-Z0-9_.]+)",
-    "linkedin": r"linkedin\.com/(?:in/|posts/|feed/update/)?([a-zA-Z0-9_-]+)",
     "github": r"github\.com/([a-zA-Z0-9_-]+)",
 }
 
-# Expanded blacklist for web directories and platform route markers
 RESERVED_PATH_WORDS = {
     "home", "explore", "search", "settings", "login", "p", "reel", "reels",
     "shorts", "watch", "status", "posts", "post", "video", "videos", "stories",
     "tv", "comments", "channel", "user", "c", "in", "people", "feed", "pub",
-    "packages", "package", "docs", "about", "contact", "privacy", "terms",
-    "api", "developer", "developers", "blog", "news", "help", "support"
+    "packages", "package", "docs", "about", "contact", "privacy", "terms", "api"
 }
 
-
-def extract_username(url: str) -> str:
-    """
-    Parses a social profile or post URL to extract the canonical handle.
-    Filters out system keywords and enforces a 3-character minimum length.
-    """
-    if not url or not isinstance(url, str):
-        return ""
-
+def extract_target_handle(url: str) -> str:
+    if not url: return ""
     url_str = url.strip()
 
     for platform, pattern in PLATFORM_PATTERNS.items():
         match = re.search(pattern, url_str, re.IGNORECASE)
         if match:
             username = match.group(1).rstrip("/").lstrip("@")
-            # Filter reserved words and enforce min length of 3
             if username.lower() not in RESERVED_PATH_WORDS and len(username) >= 3:
                 return username
 
@@ -45,11 +34,9 @@ def extract_username(url: str) -> str:
         path_parts = [p for p in parsed.path.split("/") if p]
         if path_parts:
             candidate = path_parts[0].replace("@", "")
-            if (
-                candidate.lower() not in RESERVED_PATH_WORDS 
+            if (candidate.lower() not in RESERVED_PATH_WORDS 
                 and len(candidate) >= 3 
-                and re.match(r"^[a-zA-Z0-9_.]+$", candidate)
-            ):
+                and re.match(r"^[a-zA-Z0-9_.]+$", candidate)):
                 return candidate
     except Exception:
         pass

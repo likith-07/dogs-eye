@@ -222,7 +222,7 @@
             background: var(--green-dark);
         }
 
-        /* EXPANSION PANEL & TABLE STYLING */
+        /* USERNAME EXPANSION PANEL */
         .expansion-container {
             border-top: 1px solid var(--border);
             padding: 18px;
@@ -337,28 +337,47 @@
     <!-- USERNAME EXPANSION PANEL -->
     <div class="expansion-container" id="expansionContainer">
         <div class="expansion-header">
-            <span>┌─ RELATED USERNAME CANDIDATES ──────────────────────────┐</span>
+            <span>┌─ IDENTITY CORRELATION SWEEP ──────────────────────────┐</span>
             <span id="targetHandleDisplay" style="color: var(--text);">TARGET: @---</span>
+        </div>
+        
+        <!-- Inline Input to replace unsupported prompt() -->
+        <div style="margin: 10px 0 15px 0; display: flex; gap: 10px; align-items: center; background: rgba(0, 255, 102, 0.03); padding: 10px; border: 1px solid var(--border);">
+            <span style="color: var(--muted); font-size: 11px;">TARGET HANDLE:</span>
+            <input type="text" id="targetHandleInput" style="background: var(--bg); border: 1px solid var(--green-dark); color: var(--green); padding: 6px 10px; font-family: 'Courier New', monospace; font-size: 12px; flex: 1; outline: none;" placeholder="Enter exact username...">
+            <button type="button" id="executeSweepBtn" style="padding: 6px 14px; font-size: 11px;">RUN SWEEP</button>
         </div>
 
         <table class="expansion-table">
             <thead>
                 <tr>
                     <th>PLATFORM</th>
-                    <th>HANDLE VARIANT</th>
-                    <th>MATCH TYPE</th>
+                    <th>CONFIRMED PROFILE</th>
+                    <th>EVIDENCE CORRELATION</th>
                     <th>CONFIDENCE</th>
                     <th>ACTION</th>
                 </tr>
             </thead>
-            <tbody id="expansionResultsBody"></tbody>
+            <tbody id="expansionResultsBody">
+                <tr><td colspan="5" style="color: var(--muted);">Confirm username above and click RUN SWEEP.</td></tr>
+            </tbody>
         </table>
     </div>
-</div>
 
 <script>
     const API_INVESTIGATE = "http://127.0.0.1:8000/api/investigate";
     const API_EXPAND = "http://127.0.0.1:8000/api/username-investigate";
+
+    // Global event delegation listener to capture dynamically rendered expansion buttons safely
+    document.addEventListener("click", function(event) {
+        if (event.target && event.target.classList.contains("btn-expand")) {
+            const url = event.target.getAttribute("data-url");
+            if (url) {
+                console.log("[DEBUG] Delegated click caught for URL:", url);
+                triggerOSINTCorrelation(url);
+            }
+        }
+    });
 
     function setStatus(text, processing = false) {
         document.getElementById("statusText").textContent = text;
@@ -394,7 +413,6 @@
                 throw new Error(data.error || "Pipeline failed");
             }
 
-            // Read categorized_results provided by app.py
             renderResults(data.categorized_results || {});
             setStatus("ANALYSIS COMPLETE");
         } catch (error) {
@@ -431,7 +449,7 @@
             <a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>
             <div class="meta">
                 <span>${source} · <span class="${verified ? 'verified' : 'unverified'}">${verified ? 'MATCH' : 'FOUND'} (${score})</span></span>
-                <button class="btn-expand" onclick="triggerUsernameExpansion('${url}')">[ EXPAND ]</button>
+                <button class="btn-expand" type="button" data-url="${url}">[ CORRELATE IDENTITY ]</button>
             </div>
         `;
         return li;
@@ -459,50 +477,80 @@
         document.getElementById("externalCount").textContent = external.length;
     }
 
-    async function triggerUsernameExpansion(url) {
-        setStatus("EXPANDING HANDLE...", true);
+    let activeTargetUrl = "";
+
+    function triggerOSINTCorrelation(url) {
+        activeTargetUrl = url;
+        let roughGuess = url.split('/').filter(p => p.length > 2 && !['www', 'com', 'https:', 'status', 'p', 'reel'].includes(p)).pop() || "";
+        roughGuess = roughGuess.replace('@', '').split('?')[0];
+
+        const container = document.getElementById("expansionContainer");
+        const inputField = document.getElementById("targetHandleInput");
+        
+        inputField.value = roughGuess;
+        container.style.display = "block";
+        container.scrollIntoView({ behavior: "smooth" });
+    }
+
+    // Bind execution to the inline sweep button
+    document.addEventListener("click", function(event) {
+        if (event.target && event.target.id === "executeSweepBtn") {
+            runActiveSweep();
+        }
+    });
+
+    async function runActiveSweep() {
+        const inputField = document.getElementById("targetHandleInput");
+        let targetHandle = inputField.value.trim();
+
+        if (!targetHandle) {
+            alert("Please enter a valid target username.");
+            return;
+        }
+
+        setStatus("POLLING EXTERNAL APIS...", true);
+        const tbody = document.getElementById("expansionResultsBody");
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--green-dim);">Querying external WhatsMyName database (takes 10-15s)...</td></tr>`;
 
         try {
             const response = await fetch(API_EXPAND, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ confirmed_url: url })
+                body: JSON.stringify({ target_username: targetHandle })
             });
-
             const data = await response.json();
-            if (!data.success) {
-                throw new Error(data.error || "Expansion failed");
-            }
-
-            displayExpansionResults(data);
-            setStatus("EXPANSION COMPLETE");
+            
+            if (!data.success) throw new Error(data.error || "External API Sweep failed");
+            displayCorrelationResults(data);
+            setStatus("CORRELATION COMPLETE");
         } catch (error) {
-            console.error(error);
-            setStatus("EXPANSION FAILED");
-            alert(error.message);
+            console.error("[ERROR] OSINT sweep failed:", error);
+            setStatus("OSINT SWEEP FAILED");
+            tbody.innerHTML = `<tr><td colspan="5" style="color: var(--red);">${error.message}</td></tr>`;
         }
     }
 
-    function displayExpansionResults(data) {
-        const container = document.getElementById("expansionContainer");
+    function displayCorrelationResults(data) {
         const tbody = document.getElementById("expansionResultsBody");
         document.getElementById("targetHandleDisplay").textContent = `TARGET: @${data.extracted_username}`;
-
         tbody.innerHTML = "";
+
+        if (!data.results || data.results.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" style="color: var(--muted);">No live endpoints responded with HTTP 200 for this handle.</td></tr>`;
+            return;
+        }
+
         data.results.forEach(item => {
             const tr = document.createElement("tr");
             tr.innerHTML = `
                 <td style="text-transform: uppercase;">[ ${item.platform} ]</td>
                 <td>@${item.username}</td>
-                <td>${item.match_type}</td>
+                <td>${item.evidence}</td>
                 <td class="conf-${item.confidence}">${item.confidence}</td>
                 <td><a href="${item.profile_url}" target="_blank" rel="noopener noreferrer" style="color: var(--green);">INSPECT LINK</a></td>
             `;
             tbody.appendChild(tr);
         });
-
-        container.style.display = "block";
-        container.scrollIntoView({ behavior: "smooth" });
     }
 </script>
 
