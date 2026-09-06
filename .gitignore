@@ -223,3 +223,6 @@ data/inputs/*
 .insightface/
 __pycache__/
 *.pyc
+#data
+data/*.json
+!data/.gitkeep

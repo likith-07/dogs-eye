@@ -1,115 +1,55 @@
-from urllib.parse import urlparse
+from typing import List, Dict, Any
 
-
-SOCIAL_MEDIA_DOMAINS = {
-    "x.com",
-    "twitter.com",
-    "instagram.com",
-    "facebook.com",
-    "tiktok.com",
-    "threads.com",
-    "youtube.com",
-    "linkedin.com",
-}
-
-
-def is_social_media_url(url):
+def normalize_candidates(candidates: List[Any]) -> List[Dict[str, Any]]:
     """
-    Check whether a URL belongs to a supported social-media platform.
+    Standardizes search results from multiple providers into a uniform dictionary structure.
+    Handles both SearchAPI formatting and FaceFinder Data URI formatting.
     """
+    normalized_list = []
 
-    try:
-        hostname = urlparse(url).hostname
+    for item in candidates:
+        if not isinstance(item, dict):
+            continue
 
-        if not hostname:
-            return False
+        normalized_item = {}
 
-        hostname = hostname.lower()
+        # ----------------------------------------------------
+        # Detect FaceFinder Formatting
+        # (Relies on 'guid', 'base64', and 'score' keys)
+        # ----------------------------------------------------
+        if "base64" in item and "guid" in item:
+            url_val = item.get("url", "")
+            source_domain = "FaceFinder"
+            if "instagram.com" in url_val.lower():
+                source_domain = "Instagram"
+            elif "facebook.com" in url_val.lower():
+                source_domain = "Facebook"
+            elif "twitter.com" in url_val.lower() or "x.com" in url_val.lower():
+                source_domain = "Twitter/X"
 
-        return any(
-            hostname == domain or hostname.endswith("." + domain)
-            for domain in SOCIAL_MEDIA_DOMAINS
-        )
+            normalized_item = {
+                "title": f"FaceFinder Match: {item.get('guid', 'Unknown')}",
+                "source": source_domain,
+                "page_url": url_val,
+                # Explicitly capture base64 data URI so filtering doesn't drop it
+                "image_url": item.get("base64") or url_val,
+                "provider": "facefinder",
+                "search_rank": item.get("score", "N/A")
+            }
 
-    except Exception:
-        return False
+        # ----------------------------------------------------
+        # Detect Standard Web SearchAPI Formatting
+        # ----------------------------------------------------
+        else:
+            normalized_item = {
+                "title": item.get("title") or item.get("name") or "SearchAPI Result",
+                "source": item.get("source") or item.get("domain") or "Web Search",
+                "page_url": item.get("link") or item.get("url") or item.get("page_url", ""),
+                "image_url": item.get("thumbnail") or item.get("image") or item.get("image_url", ""),
+                "provider": item.get("provider", "searchapi"),
+                "search_rank": item.get("rank") or item.get("position", "N/A")
+            }
+        
+        normalized_list.append(normalized_item)
 
-
-def extract_author(url):
-    """
-    Extract the author/username when it is unambiguously present
-    in the social-media URL.
-
-    Returns:
-        str | None: Author/username if reliably available, otherwise None.
-    """
-
-    try:
-        parsed = urlparse(url)
-        hostname = parsed.hostname.lower() if parsed.hostname else ""
-        parts = [part for part in parsed.path.split("/") if part]
-
-        # X / Twitter:
-        # https://x.com/username/status/123456
-        if hostname in {"x.com", "twitter.com"}:
-            if len(parts) >= 2 and parts[1] == "status":
-                if parts[0] not in {"i", "home", "search"}:
-                    return parts[0]
-
-        # TikTok:
-        # https://www.tiktok.com/@username/video/123456
-        if hostname == "tiktok.com" or hostname.endswith(".tiktok.com"):
-            if parts and parts[0].startswith("@"):
-                return parts[0][1:]
-
-        # Threads:
-        # https://www.threads.com/@username/post/123456
-        if hostname == "threads.com" or hostname.endswith(".threads.com"):
-            if parts and parts[0].startswith("@"):
-                return parts[0][1:]
-
-    except Exception:
-        pass
-
-    return None
-
-
-def normalize_candidates(*candidate_lists):
-    """
-    Merge candidate lists from multiple providers, keep only supported
-    social-media results, extract authors where possible, and remove duplicates.
-    """
-
-    merged = []
-    seen_urls = set()
-
-    for candidates in candidate_lists:
-        for candidate in candidates:
-            page_url = candidate.get("page_url")
-
-            if not page_url:
-                continue
-
-            if not is_social_media_url(page_url):
-                continue
-
-            normalized_url = page_url.rstrip("/")
-
-            if normalized_url in seen_urls:
-                continue
-
-            seen_urls.add(normalized_url)
-
-            merged.append(
-                {
-                    "page_url": page_url,
-                    "image_url": candidate.get("image_url") or "",
-                    "title": candidate.get("title") or "",
-                    "source": candidate.get("source") or "",
-                    "provider": candidate.get("provider") or "",
-                    "search_rank": candidate.get("search_rank") or 0,
-                    "author": candidate.get("author") or extract_author(page_url),
-                }
-            )
-
-    return merged
+    return normalized_list

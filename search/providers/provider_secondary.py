@@ -65,6 +65,10 @@ def search(image_path):
         search_response.raise_for_status()
 
         data = search_response.json()
+        import json
+        print("\n========== RAW FACEFINDER API RESPONSE ==========")
+        print(json.dumps(data, indent=2)[:10000])
+        print("=================================================\n")
 
         if data.get("status") == "done":
             break
