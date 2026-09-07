@@ -1,44 +1,30 @@
 import os
 import shutil
-from pathlib import Path
-from urllib.parse import urlparse
+from typing import Dict, Any
 
-from fastapi import FastAPI, UploadFile, File
+from fastapi import (
+    FastAPI,
+    UploadFile,
+    File,
+    HTTPException
+)
+
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
 from main import process_image
 
+from pipeline.evidence_builder import EvidenceBuilder
 
-# ============================================================
-# PATHS
-# ============================================================
-
-BASE_DIR = Path(__file__).resolve().parent
-
-FRONTEND_DIR = BASE_DIR / "frontend"
-
-INPUT_DIR = BASE_DIR / "data" / "inputs"
-
-INPUT_DIR.mkdir(
-    parents=True,
-    exist_ok=True
+from blockchain.evidence_registry import (
+    EvidenceRegistry
 )
 
-
-# ============================================================
-# APP
-# ============================================================
 
 app = FastAPI(
-    title="DogsEye",
-    description="Image-Based Investigation and Verification System"
+    title="DogsEye"
 )
 
-
-# ============================================================
-# CORS
-# ============================================================
 
 app.add_middleware(
     CORSMiddleware,
@@ -50,398 +36,28 @@ app.add_middleware(
 
 
 # ============================================================
-# SOCIAL MEDIA DOMAINS
+# PATHS
 # ============================================================
 
-SOCIAL_MEDIA_DOMAINS = {
-
-    "instagram.com",
-
-    "facebook.com",
-
-    "x.com",
-
-    "twitter.com",
-
-    "tiktok.com",
-
-    "threads.com",
-
-    "youtube.com",
-
-    "youtu.be",
-
-    "linkedin.com",
-
-    "reddit.com",
-
-    "clubhouse.com",
-
-}
-
-
-# ============================================================
-# URL HELPERS
-# ============================================================
-
-def get_hostname(
-    url: str
-) -> str:
-    """
-    Extract hostname from URL.
-    """
-
-    try:
-
-        hostname = (
-            urlparse(url)
-            .hostname
-            or ""
-        )
-
-        hostname = hostname.lower()
-
-        if hostname.startswith(
-            "www."
-        ):
-
-            hostname = hostname[4:]
-
-        return hostname
-
-    except Exception:
-
-        return ""
-
-
-def is_social_media(
-    url: str
-) -> bool:
-    """
-    Check whether URL belongs to a known
-    social media platform.
-    """
-
-    hostname = get_hostname(url)
-
-    return any(
-
-        hostname == domain
-        or hostname.endswith(
-            "." + domain
-        )
-
-        for domain
-        in SOCIAL_MEDIA_DOMAINS
-
-    )
-
-
-# ============================================================
-# URL CLASSIFICATION
-# ============================================================
-
-def classify_url(
-    url: str
-) -> str:
-    """
-    Classify URL as:
-
-        social_profile
-        social_post
-        non_social
-    """
-
-    if not url:
-
-        return "non_social"
-
-
-    try:
-
-        parsed = urlparse(url)
-
-        hostname = get_hostname(url)
-
-        path = (
-            parsed.path
-            .lower()
-        )
-
-    except Exception:
-
-        return "non_social"
-
-
-    # --------------------------------------------------------
-    # NON SOCIAL
-    # --------------------------------------------------------
-
-    if not is_social_media(url):
-
-        return "non_social"
-
-
-    # --------------------------------------------------------
-    # INSTAGRAM
-    # --------------------------------------------------------
-
-    if "instagram.com" in hostname:
-
-        if any(
-
-            marker in path
-
-            for marker in [
-
-                "/p/",
-
-                "/reel/",
-
-                "/reels/",
-
-                "/tv/"
-
-            ]
-
-        ):
-
-            return "social_post"
-
-        return "social_profile"
-
-
-    # --------------------------------------------------------
-    # X / TWITTER
-    # --------------------------------------------------------
-
-    if (
-
-        "x.com" in hostname
-        or "twitter.com" in hostname
-
-    ):
-
-        if "/status/" in path:
-
-            return "social_post"
-
-        return "social_profile"
-
-
-    # --------------------------------------------------------
-    # TIKTOK
-    # --------------------------------------------------------
-
-    if "tiktok.com" in hostname:
-
-        if "/video/" in path:
-
-            return "social_post"
-
-        return "social_profile"
-
-
-    # --------------------------------------------------------
-    # THREADS
-    # --------------------------------------------------------
-
-    if "threads.com" in hostname:
-
-        if "/post/" in path:
-
-            return "social_post"
-
-        return "social_profile"
-
-
-    # --------------------------------------------------------
-    # YOUTUBE
-    # --------------------------------------------------------
-
-    if (
-
-        "youtube.com" in hostname
-        or "youtu.be" in hostname
-
-    ):
-
-        if (
-
-            "/watch" in path
-            or "/shorts/" in path
-            or hostname == "youtu.be"
-
-        ):
-
-            return "social_post"
-
-        return "social_profile"
-
-
-    # --------------------------------------------------------
-    # FACEBOOK
-    # --------------------------------------------------------
-
-    if "facebook.com" in hostname:
-
-        if any(
-
-            marker in path
-
-            for marker in [
-
-                "/posts/",
-
-                "/videos/",
-
-                "/reel/",
-
-                "/photo"
-
-            ]
-
-        ):
-
-            return "social_post"
-
-        return "social_profile"
-
-
-    # --------------------------------------------------------
-    # LINKEDIN
-    # --------------------------------------------------------
-
-    if "linkedin.com" in hostname:
-
-        if (
-
-            "/posts/" in path
-            or "/feed/update/" in path
-
-        ):
-
-            return "social_post"
-
-        return "social_profile"
-
-
-    # --------------------------------------------------------
-    # REDDIT
-    # --------------------------------------------------------
-
-    if "reddit.com" in hostname:
-
-        if "/comments/" in path:
-
-            return "social_post"
-
-        return "social_profile"
-
-
-    # --------------------------------------------------------
-    # CLUBHOUSE
-    # --------------------------------------------------------
-
-    if "clubhouse.com" in hostname:
-
-        return "social_profile"
-
-
-    # Default for social platforms
-
-    return "social_profile"
-
-
-# ============================================================
-# ORGANIZE RESULTS
-# ============================================================
-
-def organize_results(
-    results: list
-) -> dict:
-    """
-    Split results into three categories.
-    """
-
-    social_profiles = []
-
-    social_posts = []
-
-    non_social_links = []
-
-
-    for item in results:
-
-        if not isinstance(
-            item,
-            dict
-        ):
-
-            continue
-
-
-        url = (
-
-            item.get(
-                "page_url"
-            )
-
-            or
-
-            item.get(
-                "url"
-            )
-
-            or
-
-            ""
-
-        )
-
-
-        category = classify_url(url)
-
-
-        # Add classification so frontend
-        # knows exactly what this result is.
-
-        item["category"] = category
-
-
-        if category == "social_profile":
-
-            social_profiles.append(
-                item
-            )
-
-
-        elif category == "social_post":
-
-            social_posts.append(
-                item
-            )
-
-
-        else:
-
-            non_social_links.append(
-                item
-            )
-
-
-    return {
-
-        "social_profiles":
-            social_profiles,
-
-        "social_posts":
-            social_posts,
-
-        "non_social_links":
-            non_social_links,
-
-    }
+BASE_DIR = os.path.dirname(
+    os.path.abspath(__file__)
+)
+
+FRONTEND_DIR = os.path.join(
+    BASE_DIR,
+    "frontend"
+)
+
+INPUT_DIR = os.path.join(
+    BASE_DIR,
+    "data",
+    "inputs"
+)
+
+os.makedirs(
+    INPUT_DIR,
+    exist_ok=True
+)
 
 
 # ============================================================
@@ -451,41 +67,53 @@ def organize_results(
 @app.get("/")
 async def serve_frontend():
 
+    index_path = os.path.join(
+        FRONTEND_DIR,
+        "index.html"
+    )
+
+    if not os.path.exists(index_path):
+
+        raise HTTPException(
+            status_code=404,
+            detail="frontend/index.html not found"
+        )
+
     return FileResponse(
-        FRONTEND_DIR / "index.html"
+        index_path
     )
 
 
 # ============================================================
-# INVESTIGATION ENDPOINT
+# INVESTIGATION
 # ============================================================
 
-@app.post(
-    "/api/investigate"
-)
+@app.post("/api/investigate")
 async def investigate_image(
-
     file: UploadFile = File(...)
-
 ):
 
-    # --------------------------------------------------------
-    # SAVE UPLOADED IMAGE
-    # --------------------------------------------------------
+    if not file.filename:
 
-    safe_filename = (
-        Path(
-            file.filename
+        raise HTTPException(
+            status_code=400,
+            detail="No image selected"
         )
-        .name
+
+
+    safe_filename = os.path.basename(
+        file.filename
+    )
+
+    file_path = os.path.join(
+        INPUT_DIR,
+        safe_filename
     )
 
 
-    file_path = (
-        INPUT_DIR
-        / safe_filename
-    )
-
+    # --------------------------------------------------------
+    # SAVE IMAGE
+    # --------------------------------------------------------
 
     with open(
         file_path,
@@ -499,85 +127,137 @@ async def investigate_image(
 
 
     # --------------------------------------------------------
-    # RUN PIPELINE
+    # RUN DOGSEYE PIPELINE
     # --------------------------------------------------------
 
-    result = process_image(
+    try:
 
-        str(file_path)
+        investigation_result = process_image(
+            file_path
+        )
 
-    )
+    except Exception as error:
 
-
-    # --------------------------------------------------------
-    # HANDLE PIPELINE FAILURE
-    # --------------------------------------------------------
-
-    if not result.get(
-
-        "success",
-
-        False
-
-    ):
-
-        return result
+        raise HTTPException(
+            status_code=500,
+            detail=f"Pipeline failed: {error}"
+        )
 
 
     # --------------------------------------------------------
-    # ORGANIZE RESULTS
+    # BUILD EVIDENCE
     # --------------------------------------------------------
 
-    results = result.get(
+    try:
 
-        "results",
+        evidence = EvidenceBuilder.build(
+            investigation_result
+        )
 
-        []
+    except Exception as error:
 
-    )
-
-
-    categorized_results = organize_results(
-
-        results
-
-    )
+        raise HTTPException(
+            status_code=500,
+            detail=f"Evidence building failed: {error}"
+        )
 
 
     # --------------------------------------------------------
-    # RETURN RESULT
+    # RETURN INVESTIGATION + EVIDENCE
+    #
+    # Evidence is NOT automatically registered yet.
+    # The frontend can explicitly trigger blockchain storage.
     # --------------------------------------------------------
 
     return {
 
-        **result,
+        "success": investigation_result.get(
+            "success",
+            True
+        ),
 
-        "categorized_results":
-            categorized_results,
+        "investigation": investigation_result,
 
-        "summary": {
-
-            "social_profiles":
-                len(
-                    categorized_results[
-                        "social_profiles"
-                    ]
-                ),
-
-            "social_posts":
-                len(
-                    categorized_results[
-                        "social_posts"
-                    ]
-                ),
-
-            "non_social_links":
-                len(
-                    categorized_results[
-                        "non_social_links"
-                    ]
-                ),
-
-        }
+        "evidence": evidence
 
     }
+
+
+# ============================================================
+# REGISTER EVIDENCE ON BLOCKCHAIN
+# ============================================================
+
+@app.post("/api/blockchain/register")
+async def register_evidence(
+    payload: Dict[str, Any]
+):
+
+    evidence = payload.get(
+        "evidence"
+    )
+
+    if not evidence:
+
+        raise HTTPException(
+            status_code=400,
+            detail="Evidence payload is missing"
+        )
+
+
+    try:
+
+        registry = EvidenceRegistry()
+
+        blockchain_result = registry.register(
+            evidence
+        )
+
+        return blockchain_result
+
+
+    except Exception as error:
+
+        raise HTTPException(
+            status_code=500,
+            detail=f"Blockchain registration failed: {error}"
+        )
+
+
+# ============================================================
+# VERIFY EVIDENCE
+# ============================================================
+
+@app.post("/api/blockchain/verify")
+async def verify_evidence(
+    payload: Dict[str, Any]
+):
+
+    evidence = payload.get(
+        "evidence"
+    )
+
+    if not evidence:
+
+        raise HTTPException(
+            status_code=400,
+            detail="Evidence payload is missing"
+        )
+
+
+    try:
+
+        registry = EvidenceRegistry()
+
+        verification_result = registry.verify(
+            evidence
+        )
+
+        return verification_result
+
+
+    except Exception as error:
+
+        raise HTTPException(
+            status_code=500,
+            detail=f"Blockchain verification failed: {error}"
+        )

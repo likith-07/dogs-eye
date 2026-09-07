@@ -1,72 +1,54 @@
-from datetime import datetime, timezone
-from typing import Dict, Any
-
-from blockchain.hashing import hash_file
+from typing import Dict, Any, List
 
 
-def build_evidence(
-    input_image_path: str,
-    pipeline_result: Dict[str, Any]
-) -> Dict[str, Any]:
+class EvidenceBuilder:
     """
-    Converts the output from IntegratedPipeline into a
-    standardized blockchain evidence record.
+    Builds the canonical evidence payload that will be hashed and
+    registered on the blockchain.
+
+    Username expansion/discovery data should NOT be included here.
     """
 
-    verified_matches = []
+    @staticmethod
+    def build(
+        investigation_result: Dict[str, Any]
+    ) -> Dict[str, Any]:
 
-    for result in pipeline_result.get("results", []):
+        raw_results: List[Dict[str, Any]] = (
+            investigation_result.get("results") or []
+        )
 
-        if result.get("verified"):
+        evidence_results = []
 
-            verified_matches.append({
-                "candidate_id": result.get("candidate_id"),
+        for item in raw_results:
 
-                "title": result.get("title"),
+            evidence_results.append(
+                {
+                    "page_url": item.get("page_url"),
+                    "image_url": item.get("image_url"),
+                    "source": item.get("source"),
+                    "provider": item.get("provider"),
+                    "title": item.get("title"),
+                    "search_rank": item.get("search_rank"),
+                    "author": item.get("author"),
+                    "verified": item.get("verified"),
+                    "similarity_score": item.get(
+                        "similarity_score"
+                    ),
+                }
+            )
 
-                "source": result.get("source"),
+        evidence = {
+            "target_image": investigation_result.get(
+                "target_image"
+            ),
 
-                "matched_page_url": result.get(
-                    "page_url"
-                ),
+            "total_candidates_found": investigation_result.get(
+                "total_candidates_found",
+                0
+            ),
 
-                "matched_image_url": result.get(
-                    "image_url"
-                ),
+            "results": evidence_results,
+        }
 
-                "similarity_score": result.get(
-                    "similarity_score"
-                )
-            })
-
-    evidence = {
-        # Cryptographic identity of the original input image
-        "input_image_hash": hash_file(
-            input_image_path
-        ),
-
-        # Pipeline metadata
-        "total_candidates_found": pipeline_result.get(
-            "total_candidates_found",
-            0
-        ),
-
-        "total_candidates_evaluated": pipeline_result.get(
-            "total_candidates_evaluated",
-            0
-        ),
-
-        # Verification results
-        "verified_matches": verified_matches,
-
-        "verified_matches_count": len(
-            verified_matches
-        ),
-
-        # When this evidence record was created
-        "timestamp": datetime.now(
-            timezone.utc
-        ).isoformat()
-    }
-
-    return evidence
+        return evidence
