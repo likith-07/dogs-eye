@@ -6,7 +6,7 @@ from fastapi import (
     FastAPI,
     UploadFile,
     File,
-    HTTPException
+    HTTPException,
 )
 
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,9 +16,7 @@ from main import process_image
 
 from pipeline.evidence_builder import EvidenceBuilder
 
-from blockchain.evidence_registry import (
-    EvidenceRegistry
-)
+from blockchain.evidence_registry import EvidenceRegistry
 
 
 app = FastAPI(
@@ -73,7 +71,6 @@ async def serve_frontend():
     )
 
     if not os.path.exists(index_path):
-
         raise HTTPException(
             status_code=404,
             detail="frontend/index.html not found"
@@ -94,13 +91,12 @@ async def investigate_image(
 ):
 
     if not file.filename:
-
         raise HTTPException(
             status_code=400,
             detail="No image selected"
         )
 
-
+    # Prevent directory traversal.
     safe_filename = os.path.basename(
         file.filename
     )
@@ -110,19 +106,27 @@ async def investigate_image(
         safe_filename
     )
 
-
     # --------------------------------------------------------
-    # SAVE IMAGE
+    # SAVE ORIGINAL EVIDENCE FILE
     # --------------------------------------------------------
 
-    with open(
-        file_path,
-        "wb"
-    ) as buffer:
+    try:
 
-        shutil.copyfileobj(
-            file.file,
-            buffer
+        with open(
+            file_path,
+            "wb"
+        ) as buffer:
+
+            shutil.copyfileobj(
+                file.file,
+                buffer
+            )
+
+    except Exception as error:
+
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to save evidence file: {error}"
         )
 
 
@@ -151,7 +155,8 @@ async def investigate_image(
     try:
 
         evidence = EvidenceBuilder.build(
-            investigation_result
+            investigation_result,
+            file_path
         )
 
     except Exception as error:
@@ -164,13 +169,9 @@ async def investigate_image(
 
     # --------------------------------------------------------
     # RETURN INVESTIGATION + EVIDENCE
-    #
-    # Evidence is NOT automatically registered yet.
-    # The frontend can explicitly trigger blockchain storage.
     # --------------------------------------------------------
 
     return {
-
         "success": investigation_result.get(
             "success",
             True
@@ -179,7 +180,6 @@ async def investigate_image(
         "investigation": investigation_result,
 
         "evidence": evidence
-
     }
 
 
@@ -197,12 +197,78 @@ async def register_evidence(
     )
 
     if not evidence:
-
         raise HTTPException(
             status_code=400,
             detail="Evidence payload is missing"
         )
 
+    # --------------------------------------------------------
+    # Make sure the evidence contains file information.
+    # --------------------------------------------------------
+
+    evidence_file = evidence.get(
+        "evidence_file"
+    )
+
+    if not evidence_file:
+        raise HTTPException(
+            status_code=400,
+            detail="Evidence file information is missing"
+        )
+
+    filename = evidence_file.get(
+        "filename"
+    )
+
+    if not filename:
+        raise HTTPException(
+            status_code=400,
+            detail="Evidence filename is missing"
+        )
+
+    safe_filename = os.path.basename(
+        filename
+    )
+
+    file_path = os.path.join(
+        INPUT_DIR,
+        safe_filename
+    )
+
+    if not os.path.isfile(file_path):
+        raise HTTPException(
+            status_code=404,
+            detail=f"Evidence file not found: {safe_filename}"
+        )
+
+    # --------------------------------------------------------
+    # IMPORTANT:
+    #
+    # Recalculate the file hash instead of trusting the
+    # hash supplied by the frontend.
+    # --------------------------------------------------------
+
+    try:
+
+        current_file_hash = EvidenceBuilder.hash_file(
+            file_path
+        )
+
+        evidence["evidence_file"]["sha256"] = (
+            current_file_hash
+        )
+
+    except Exception as error:
+
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to hash evidence file: {error}"
+        )
+
+
+    # --------------------------------------------------------
+    # REGISTER
+    # --------------------------------------------------------
 
     try:
 
@@ -213,7 +279,6 @@ async def register_evidence(
         )
 
         return blockchain_result
-
 
     except Exception as error:
 
@@ -237,12 +302,88 @@ async def verify_evidence(
     )
 
     if not evidence:
-
         raise HTTPException(
             status_code=400,
             detail="Evidence payload is missing"
         )
 
+    # --------------------------------------------------------
+    # Get the evidence file information.
+    # --------------------------------------------------------
+
+    evidence_file = evidence.get(
+        "evidence_file"
+    )
+
+    if not evidence_file:
+        raise HTTPException(
+            status_code=400,
+            detail="Evidence file information is missing"
+        )
+
+    filename = evidence_file.get(
+        "filename"
+    )
+
+    if not filename:
+        raise HTTPException(
+            status_code=400,
+            detail="Evidence filename is missing"
+        )
+
+    # Prevent directory traversal.
+    safe_filename = os.path.basename(
+        filename
+    )
+
+    file_path = os.path.join(
+        INPUT_DIR,
+        safe_filename
+    )
+
+    if not os.path.isfile(file_path):
+        raise HTTPException(
+            status_code=404,
+            detail=f"Evidence file not found: {safe_filename}"
+        )
+
+    # --------------------------------------------------------
+    # CRITICAL TAMPER DETECTION STEP
+    #
+    # Read the CURRENT file from disk and calculate its
+    # SHA-256 hash.
+    #
+    # We intentionally DO NOT trust the hash sent by the
+    # frontend.
+    # --------------------------------------------------------
+
+    try:
+
+        current_file_hash = EvidenceBuilder.hash_file(
+            file_path
+        )
+
+    except Exception as error:
+
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to hash evidence file: {error}"
+        )
+
+
+    # --------------------------------------------------------
+    # Replace the potentially stale/untrusted hash with the
+    # hash of the actual file currently on disk.
+    # --------------------------------------------------------
+
+    evidence["evidence_file"]["sha256"] = (
+        current_file_hash
+    )
+
+
+    # --------------------------------------------------------
+    # VERIFY AGAINST BLOCKCHAIN
+    # --------------------------------------------------------
 
     try:
 
@@ -252,8 +393,11 @@ async def verify_evidence(
             evidence
         )
 
-        return verification_result
+        # Add useful information for the frontend/demo.
+        verification_result["file_hash"] = current_file_hash
+        verification_result["filename"] = safe_filename
 
+        return verification_result
 
     except Exception as error:
 
