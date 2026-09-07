@@ -42,7 +42,7 @@ class IntegratedPipeline:
     ) -> Dict[str, Any]:
 
         print("\n" + "=" * 60)
-        print("DOGSEYE SEARCH PIPELINE (PROVIDER SCORING MODE)")
+        print("DOGSEYE SEARCH PIPELINE")
         print("=" * 60)
 
         if not os.path.exists(target_image_path):
