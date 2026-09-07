@@ -1,35 +1,36 @@
-<div align="center">
-
-<pre>
-██████╗  ██████╗  ██████╗ ███████╗███████╗██╗   ██╗███████╗
-██╔══██╗██╔═══██╗██╔════╝ ██╔════╝██╔════╝╚██╗ ██╔╝██╔════╝
-██║  ██║██║   ██║██║  ███╗███████╗█████╗   ╚████╔╝ █████╗
-██║  ██║██║   ██║██║   ██║╚════██║██╔══╝    ╚██╔╝  ██╔══╝
-██████╔╝╚██████╔╝╚██████╔╝███████║███████╗   ██║   ███████╗
-╚═════╝  ╚═════╝  ╚═════╝ ╚══════╝╚══════╝   ╚═╝   ╚══════╝
-</pre>
-
 # DogsEye
 
 ### Image-Based Open Web Investigation & Evidence Verification System
 
 ```text
+██████╗  ██████╗  ███████╗███████╗███████╗██╗   ██╗███████╗
+██╔══██╗██╔═══██╗██╔════╝ ██╔════╝██╔════╝╚██╗ ██╔╝██╔════╝
+██║  ██║██║   ██║██║  ███╗███████╗█████╗   ╚████╔╝ █████╗
+██║  ██║██║   ██║██║   ██║╚════██║██╔══╝    ╚██╔╝  ██╔══╝
+██████╔╝╚██████╔╝╚██████╔╝███████║███████╗   ██║   ███████╗
+╚═════╝  ╚═════╝  ╚═════╝ ╚══════╝╚══════╝   ╚═╝   ╚══════╝
+```
+
+```text
 ┌──────────────────────────────────────────────────────────────┐
-│                        INVESTIGATION FLOW                    │
+│                      INVESTIGATION FLOW                      │
 └──────────────────────────────────────────────────────────────┘
 
                          INPUT IMAGE
                               │
                               ▼
-                    REVERSE IMAGE SEARCH
+                  REVERSE IMAGE SEARCH
                               │
-                    ┌─────────┴─────────┐
-                    ▼                   ▼
-                SEARCHAPI          FACEFINDER
-                    │                   │
-                    └─────────┬─────────┘
+                 ┌────────────┴────────────┐
+                 ▼                         ▼
+             SEARCHAPI                 OPENNINJA
+                 │                         │
+                 └────────────┬────────────┘
                               ▼
-                       NORMALIZATION
+                       RESULT MERGING
+                              │
+                              ▼
+                        NORMALIZATION
                               │
                               ▼
                     FILTER + DEDUPLICATION
@@ -37,22 +38,23 @@
                               ▼
                     RESULT CLASSIFICATION
                               │
-               ┌──────────────┼──────────────┐
-               ▼              ▼              ▼
-           PROFILES         POSTS         EXTERNAL
-               │              │              │
-               └──────────────┼──────────────┘
+                  ┌───────────┼───────────┐
+                  ▼           ▼           ▼
+              PROFILES      POSTS      EXTERNAL
+                  │           │           │
+                  └───────────┼───────────┘
                               ▼
-                       EVIDENCE LOGGING
+                       EVIDENCE BUILDER
                               │
                               ▼
-                         BLOCKCHAIN
+                       SHA-256 HASHING
                               │
                               ▼
-                      INTEGRITY CHECK
+                     ETHEREUM SEPOLIA
+                              │
+                              ▼
+                     INTEGRITY CHECK
 ```
-
-</div>
 
 ---
 
@@ -60,29 +62,35 @@
 
 **DogsEye** is an image-based open web investigation and evidence verification system.
 
-The system accepts an input image and attempts to discover visually related or matching images available through supported reverse image search providers. Search results are collected, normalized, filtered, deduplicated, and classified into social media profiles, social media posts, and external web links.
+The system accepts an input image and uses supported reverse image search providers to discover potentially related or matching images available on the open web.
 
-Investigation evidence can then be recorded in a tamper-evident local blockchain.
-
-DogsEye is built around the following workflow:
+Search results from multiple providers are aggregated and passed through a common processing pipeline that performs:
 
 ```text
 SEARCH
-   +
+   ↓
 NORMALIZE
-   +
+   ↓
+FILTER
+   ↓
+DEDUPLICATE
+   ↓
 CLASSIFY
-   +
+   ↓
+BUILD EVIDENCE
+   ↓
+HASH
+   ↓
+REGISTER
+   ↓
 VERIFY
-   +
-PRESERVE EVIDENCE
 ```
 
-The objective is to create a transparent investigation pipeline where search results and evidence can be reviewed and where historical evidence records can be checked for tampering.
+The goal is to provide an investigation workflow where discovered results can be reviewed and the resulting evidence can be cryptographically committed to a blockchain.
 
 ---
 
-# `> WHAT DOES DogsEye DO?`
+# `> WHAT DOES DOGSEYE DO?`
 
 Given an input image, DogsEye performs the following operations:
 
@@ -92,65 +100,75 @@ Given an input image, DogsEye performs the following operations:
                     └────────┬────────┘
                              │
                              ▼
-                ┌─────────────────────────┐
-                │ REVERSE IMAGE SEARCH    │
-                └────────────┬────────────┘
-                             │
-                ┌────────────┴────────────┐
-                ▼                         ▼
-        ┌────────────────┐       ┌────────────────┐
-        │   SEARCHAPI    │       │  FACEFINDERAI  │
-        └───────┬────────┘       └───────┬────────┘
-                │                        │
-                └────────────┬───────────┘
-                             ▼
-                    ┌────────────────┐
-                    │ NORMALIZATION  │
-                    └────────┬───────┘
-                             ▼
-                    ┌────────────────┐
-                    │   FILTERING    │
-                    └────────┬───────┘
-                             ▼
-                    ┌────────────────┐
-                    │ DEDUPLICATION  │
-                    └────────┬───────┘
-                             ▼
-                    ┌────────────────┐
-                    │ CLASSIFICATION │
-                    └────────┬───────┘
-                             │
-                ┌────────────┼────────────┐
-                ▼            ▼            ▼
-             PROFILES      POSTS       EXTERNAL
-                │            │            │
-                └────────────┼────────────┘
-                             ▼
-                    ┌────────────────┐
-                    │ EVIDENCE STORE │
-                    └────────┬───────┘
-                             ▼
-                    ┌────────────────┐
-                    │   BLOCKCHAIN   │
-                    └────────────────┘
+                 ┌────────────────────────┐
+                 │ REVERSE IMAGE SEARCH   │
+                 └────────────┬───────────┘
+                              │
+                 ┌────────────┴────────────┐
+                 ▼                         ▼
+          ┌────────────────┐       ┌────────────────┐
+          │    SEARCHAPI   │       │   OPENNINJA    │
+          └───────┬────────┘       └───────┬────────┘
+                  │                        │
+                  └────────────┬───────────┘
+                               ▼
+                      ┌────────────────┐
+                      │ RESULT MERGING │
+                      └────────┬───────┘
+                               ▼
+                      ┌────────────────┐
+                      │ NORMALIZATION  │
+                      └────────┬───────┘
+                               ▼
+                      ┌────────────────┐
+                      │    FILTERING   │
+                      └────────┬───────┘
+                               ▼
+                      ┌────────────────┐
+                      │ DEDUPLICATION  │
+                      └────────┬───────┘
+                               ▼
+                      ┌────────────────┐
+                      │ CLASSIFICATION │
+                      └────────┬───────┘
+                               │
+                   ┌───────────┼───────────┐
+                   ▼           ▼           ▼
+                PROFILES      POSTS      EXTERNAL
+                   │           │           │
+                   └───────────┼───────────┘
+                               ▼
+                      ┌────────────────┐
+                      │ EVIDENCE BUILD │
+                      └────────┬───────┘
+                               ▼
+                      ┌────────────────┐
+                      │   SHA-256 HASH │
+                      └────────┬───────┘
+                               ▼
+                      ┌────────────────┐
+                      │ ETHEREUM       │
+                      │ SEPOLIA        │
+                      └────────────────┘
 ```
 
-The system provides:
+### Core capabilities
 
-- Reverse image search using multiple providers.
-- Parallel execution of search providers.
-- Candidate aggregation.
-- Candidate normalization.
-- URL filtering.
-- Candidate deduplication.
-- Social media profile detection.
-- Social media post detection.
-- External link detection.
-- Optional face verification using InsightFace.
-- Cryptographic hashing of investigation evidence.
-- Tamper-evident blockchain storage.
-- Blockchain integrity verification.
-- A minimal terminal-style investigation dashboard.
+* Reverse image search using multiple providers.
+* SearchAPI as a primary search provider.
+* OpenNinja as a secondary search provider.
+* Result aggregation.
+* Provider-independent result normalization.
+* URL filtering.
+* Candidate deduplication.
+* Social media profile detection.
+* Social media post detection.
+* External link detection.
+* Cryptographic evidence hashing.
+* Evidence registration on Ethereum Sepolia.
+* Blockchain-based evidence verification.
+* Detection of modifications to the original evidence file.
+* Web-based investigation interface.
 
 ---
 
@@ -160,54 +178,64 @@ The system provides:
 ┌─────────────────────────────────────────────────────────────┐
 │                         FRONTEND                            │
 │                                                             │
-│                      DogsEye Terminal                       │
+│                    DogsEye Investigation UI                 │
 │                                                             │
-│        Upload Image → Execute Investigation → Results       │
+│       Upload Image → Investigate → Review Results           │
 └──────────────────────────────┬──────────────────────────────┘
                                │
                                │ HTTP
                                ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                         BACKEND                             │
+│                          BACKEND                            │
 │                                                             │
-│                     FastAPI Application                     │
+│                       FastAPI Application                   │
 │                                                             │
 │                  POST /api/investigate                      │
 └──────────────────────────────┬──────────────────────────────┘
                                │
                                ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                    INTEGRATED PIPELINE                      │
+│                    INVESTIGATION PIPELINE                   │
 │                                                             │
-│   Input Validation → Search → Processing → Evidence         │
-└───────────────┬───────────────────────┬─────────────────────┘
-                │                       │
-                ▼                       ▼
-┌────────────────────────┐   ┌──────────────────────────────┐
-│      SEARCH ENGINE     │   │      FACE VERIFICATION       │
-│                        │   │                              │
-│ SearchAPI              │   │ InsightFace                  │
-│ FaceFinderAI           │   │ ONNX Runtime                 │
-│ Image Hosting          │   │ Similarity Evaluation        │
-└──────────────┬─────────┘   └──────────────┬───────────────┘
-               │                            │
-               └──────────────┬─────────────┘
-                              ▼
-                 ┌────────────────────────┐
-                 │   NORMALIZED RESULTS   │
-                 └────────────┬───────────┘
-                              ▼
-                 ┌────────────────────────┐
-                 │   RESULT CLASSIFIER    │
-                 └────────────┬───────────┘
-                              ▼
-                 ┌────────────────────────┐
-                 │       BLOCKCHAIN       │
-                 └────────────┬───────────┘
-                              ▼
-                 ┌────────────────────────┐
-                 │   INTEGRITY VERIFIER   │
-                 └────────────────────────┘
+│ Input → Search → Normalize → Filter → Deduplicate           │
+│                              → Classify → Evidence           │
+└───────────────────────┬───────────────────┬─────────────────┘
+                        │                   │
+                        ▼                   ▼
+              ┌─────────────────┐   ┌─────────────────┐
+              │    SEARCHAPI    │   │    OPENNINJA    │
+              │    PRIMARY      │   │    SECONDARY    │
+              └────────┬────────┘   └────────┬────────┘
+                       │                     │
+                       └──────────┬──────────┘
+                                  ▼
+                       ┌────────────────────┐
+                       │ NORMALIZED RESULTS │
+                       └──────────┬─────────┘
+                                  ▼
+                       ┌────────────────────┐
+                       │ RESULT CLASSIFIER  │
+                       └──────────┬─────────┘
+                                  ▼
+                       ┌────────────────────┐
+                       │ EVIDENCE BUILDER   │
+                       └──────────┬─────────┘
+                                  │
+                                  ▼
+                       ┌────────────────────┐
+                       │ SHA-256 HASHING    │
+                       └──────────┬─────────┘
+                                  │
+                                  ▼
+                       ┌────────────────────┐
+                       │ ETHEREUM SEPOLIA   │
+                       │ EVIDENCE REGISTRY  │
+                       └──────────┬─────────┘
+                                  │
+                                  ▼
+                       ┌────────────────────┐
+                       │ INTEGRITY VERIFY   │
+                       └────────────────────┘
 ```
 
 ---
@@ -222,57 +250,40 @@ Location:
 search/
 ```
 
-The search engine is responsible for discovering possible online occurrences of the input image.
+The search engine is responsible for discovering potential online occurrences of the input image.
 
-DogsEye can query multiple reverse image search providers.
+DogsEye uses multiple providers:
 
 ```text
-                         INPUT IMAGE
-                              │
-                 ┌────────────┴────────────┐
-                 │                         │
-                 ▼                         ▼
-           FACEFINDERAI                 IMAGE HOST
-                 │                         │
-                 │                         ▼
-                 │                     SEARCHAPI
-                 │                         │
-                 └────────────┬────────────┘
-                              ▼
-                         RAW RESULTS
-                              │
-                              ▼
-                         NORMALIZATION
-                              │
-                              ▼
-                          FILTERING
-                              │
-                              ▼
-                        DEDUPLICATION
-                              │
-                              ▼
-                       FINAL CANDIDATES
+                    INPUT IMAGE
+                         │
+              ┌──────────┴──────────┐
+              ▼                     ▼
+          SEARCHAPI             OPENNINJA
+          PRIMARY               SECONDARY
+              │                     │
+              └──────────┬──────────┘
+                         ▼
+                    RAW RESULTS
+                         │
+                         ▼
+                    NORMALIZATION
+                         │
+                         ▼
+                      FILTERING
+                         │
+                         ▼
+                    DEDUPLICATION
+                         │
+                         ▼
+                  FINAL CANDIDATES
 ```
 
-The providers may return different response structures. The search engine passes these results through a normalization layer so the rest of the system receives a consistent format.
-
-Example candidate:
-
-```json
-{
-    "page_url": "https://example.com/page",
-    "image_url": "https://example.com/image.jpg",
-    "title": "Example Result",
-    "source": "example.com",
-    "provider": "search_provider",
-    "search_rank": 1,
-    "author": null
-}
-```
+The multi-provider architecture provides redundancy when one search provider returns incomplete results, fails, or reaches an API limitation.
 
 ---
 
-## `[02] SEARCH PROVIDERS`
+# `[02] SEARCH PROVIDERS`
 
 Location:
 
@@ -280,31 +291,46 @@ Location:
 search/providers/
 ```
 
-DogsEye uses provider modules to keep external search APIs isolated from the rest of the application.
+Provider modules isolate external API-specific logic from the rest of the investigation pipeline.
 
-Each provider is responsible for:
+Current providers:
 
 ```text
-INPUT
-  │
-  ▼
-PROVIDER REQUEST
-  │
-  ▼
-PROVIDER RESPONSE
-  │
-  ▼
-EXTRACT RESULTS
-  │
-  ▼
-RETURN RAW CANDIDATES
+┌──────────────────────────────┐
+│          SEARCHAPI            │
+│          PRIMARY              │
+└──────────────┬───────────────┘
+               │
+               │
+┌──────────────▼───────────────┐
+│          OPENNINJA            │
+│          SECONDARY            │
+└──────────────────────────────┘
 ```
 
-The provider architecture allows additional reverse image search services to be added without redesigning the entire application.
+Each provider follows the general workflow:
+
+```text
+INPUT IMAGE
+     │
+     ▼
+PROVIDER REQUEST
+     │
+     ▼
+PROVIDER RESPONSE
+     │
+     ▼
+RESULT EXTRACTION
+     │
+     ▼
+RAW CANDIDATES
+```
+
+The provider abstraction makes it possible to add or replace search services without redesigning the rest of the pipeline.
 
 ---
 
-## `[03] IMAGE HOSTING`
+# `[03] IMAGE HOSTING`
 
 Location:
 
@@ -312,15 +338,15 @@ Location:
 search/image_host.py
 ```
 
-Some reverse image search providers require the input image to be accessible through a public URL.
+Some reverse image search services require the input image to be accessible through a public URL.
 
-The image hosting component handles this workflow.
+The image hosting component supports this workflow where required:
 
 ```text
 LOCAL IMAGE
      │
      ▼
-UPLOAD IMAGE
+UPLOAD / HOST
      │
      ▼
 PUBLIC IMAGE URL
@@ -329,11 +355,11 @@ PUBLIC IMAGE URL
 SEARCH PROVIDER
 ```
 
-Providers that can directly accept a local image do not require this step.
+Providers capable of accepting the required input directly do not need to use this intermediate step.
 
 ---
 
-## `[04] CANDIDATE NORMALIZATION`
+# `[04] CANDIDATE NORMALIZATION`
 
 Location:
 
@@ -341,36 +367,31 @@ Location:
 search/normalizer.py
 ```
 
-Different search providers may use different names and structures for URLs, titles, sources, and ranking information.
+Different search providers can return different response formats.
 
-The normalization layer converts these provider-specific responses into a common candidate structure.
+The normalization layer converts provider-specific results into a consistent internal representation.
 
-```text
-RAW PROVIDER RESPONSE
-        │
-        ▼
-EXTRACT PAGE URL
-        │
-        ▼
-EXTRACT IMAGE URL
-        │
-        ▼
-STANDARDIZE FIELDS
-        │
-        ▼
-EXTRACT SOURCE
-        │
-        ▼
-NORMALIZED CANDIDATE
+Typical fields include:
+
+```json
+{
+  "page_url": "https://example.com/page",
+  "image_url": "https://example.com/image.jpg",
+  "title": "Example Result",
+  "source": "example.com",
+  "provider": "searchapi",
+  "search_rank": 1,
+  "author": null
+}
 ```
 
-This keeps the rest of the pipeline independent from provider-specific response formats.
+This allows downstream components to remain independent of individual provider response formats.
 
 ---
 
-## `[05] FILTERING AND DEDUPLICATION`
+# `[05] FILTERING AND DEDUPLICATION`
 
-The search engine filters malformed candidates and removes duplicate image URLs.
+After normalization, candidate results are filtered and deduplicated.
 
 ```text
 RAW CANDIDATES
@@ -388,93 +409,49 @@ NORMALIZE URL
 REMOVE DUPLICATES
       │
       ▼
-LIMIT RESULT COUNT
-      │
-      ▼
 FINAL CANDIDATE LIST
 ```
 
-This prevents unnecessary processing and reduces repeated results.
+This reduces redundant results and prevents the same occurrence from being processed multiple times.
 
 ---
 
-## `[06] FACE VERIFICATION`
+# `[06] RESULT CLASSIFICATION`
 
-Location:
-
-```text
-face/verifier.py
-```
-
-Face verification is an additional verification layer.
-
-It does not perform reverse image search.
-
-Instead, it can evaluate whether a face in the input image is similar to a face found in a candidate image.
+DogsEye classifies discovered URLs into three broad categories:
 
 ```text
-INPUT IMAGE                    CANDIDATE IMAGE
-     │                                │
-     ▼                                ▼
-FACE DETECTION                   FACE DETECTION
-     │                                │
-     └──────────────┬─────────────────┘
-                    ▼
-              FACE EMBEDDINGS
-                    │
-                    ▼
-             SIMILARITY SCORE
-                    │
-              ┌─────┴─────┐
-              ▼           ▼
-            MATCH      NO MATCH
-```
-
-The current implementation uses:
-
-```text
-InsightFace
-    +
-ONNX Runtime
-```
-
-Face verification is dependent on:
-
-- The candidate image being downloadable.
-- The candidate image containing a detectable face.
-- The face being sufficiently clear.
-- The search provider returning a usable image URL.
-
----
-
-# `> RESULT CLASSIFICATION`
-
-DogsEye separates results into three categories.
-
-```text
-                    CANDIDATE URL
-                          │
-                          ▼
-                 IS SOCIAL MEDIA?
-                     │       │
-                   YES       NO
-                    │         │
-                    ▼         ▼
-                  IS POST?  EXTERNAL
-                   │    │
-                  YES   NO
-                   │     │
-                   ▼     ▼
-                 POST   PROFILE
+                       CANDIDATE URL
+                             │
+                             ▼
+                   ┌────────────────────┐
+                   │ SOCIAL MEDIA URL?  │
+                   └─────────┬──────────┘
+                             │
+                   ┌─────────┴─────────┐
+                   ▼                   ▼
+                  YES                  NO
+                   │                   │
+                   ▼                   ▼
+             ┌────────────┐       EXTERNAL
+             │  IS POST?  │
+             └─────┬──────┘
+                   │
+             ┌─────┴─────┐
+             ▼           ▼
+            YES          NO
+             │            │
+             ▼            ▼
+            POST       PROFILE
 ```
 
 ---
 
-## `PROFILES`
+## Profiles
 
 Social media URLs that appear to represent an account or profile.
 
-Examples:
+Examples include:
 
 ```text
 instagram.com/username
@@ -486,11 +463,11 @@ youtube.com/@username
 
 ---
 
-## `POSTS`
+## Posts
 
-Social media URLs that appear to represent individual posts or content.
+URLs that appear to represent individual social media posts or pieces of content.
 
-Examples:
+Examples include:
 
 ```text
 instagram.com/p/...
@@ -503,245 +480,409 @@ facebook.com/.../posts/...
 
 ---
 
-## `EXTERNAL LINKS`
+## External Links
 
-Any candidate URL that does not belong to a supported social media platform.
+Candidate URLs that do not correspond to supported social media profile/post patterns.
 
-Examples may include:
+Examples include:
 
 ```text
 News websites
 Blogs
 Forums
-Image hosting websites
+Image hosting services
 Public websites
 Search-indexed pages
 ```
 
 ---
 
-# `> BLOCKCHAIN`
+# `> EVIDENCE BUILDER`
 
-## Blockchain Used
-
-DogsEye currently uses a **custom local blockchain implementation**.
-
-It is not connected to a public blockchain network.
-
-The project does not currently use:
+Location:
 
 ```text
-Bitcoin Mainnet
-Ethereum Mainnet
-Polygon
-Solana
-Hyperledger
+pipeline/evidence_builder.py
 ```
 
-Instead, DogsEye uses a lightweight blockchain specifically designed to preserve investigation evidence.
+The Evidence Builder creates the canonical evidence payload used by the blockchain registry.
+
+It extracts relevant investigation information and associates it with the actual uploaded evidence file.
+
+The evidence includes:
 
 ```text
-┌──────────────────┐
-│   GENESIS BLOCK  │
-│                  │
-│ previous_hash: 0 │
-│ block_hash: ...  │
-└────────┬─────────┘
-         │
-         │ block_hash
-         ▼
-┌──────────────────┐
-│     BLOCK #1     │
-│                  │
-│ evidence: ...    │
-│ previous_hash    │
-│ block_hash       │
-└────────┬─────────┘
-         │
-         │ block_hash
-         ▼
-┌──────────────────┐
-│     BLOCK #2     │
-│                  │
-│ evidence: ...    │
-│ previous_hash    │
-│ block_hash       │
-└────────┬─────────┘
-         │
-         ▼
-       ...
+Input / target image information
+          │
+          ▼
+Candidate results
+          │
+          ▼
+Search provider information
+          │
+          ▼
+URLs and metadata
+          │
+          ▼
+Original evidence filename
+          │
+          ▼
+SHA-256 file hash
 ```
 
-Each block contains:
+The actual image does not need to be placed on the blockchain.
 
-```json
-{
-    "index": 1,
-    "timestamp": "2026-01-01T00:00:00+00:00",
-    "evidence": {},
-    "previous_hash": "...",
-    "block_hash": "..."
-}
-```
-
-Each block contains a reference to the previous block through `previous_hash`.
-
-The block's own contents are cryptographically hashed to generate `block_hash`.
-
----
-
-# `> TAMPER EVIDENCE`
-
-The blockchain is designed to make modifications detectable.
-
-Consider the following chain:
-
-```text
-BLOCK 0
-   │
-   │ HASH_A
-   ▼
-BLOCK 1
-previous_hash = HASH_A
-   │
-   │ HASH_B
-   ▼
-BLOCK 2
-previous_hash = HASH_B
-```
-
-If someone modifies the evidence inside `BLOCK 1`:
-
-```text
-ORIGINAL BLOCK 1
-       │
-       ▼
-MODIFIED BLOCK 1
-       │
-       ▼
-BLOCK HASH CHANGES
-       │
-       ▼
-BLOCK 2.previous_hash NO LONGER MATCHES
-       │
-       ▼
-CHAIN INVALID
-```
-
-This means historical evidence can be checked for tampering.
-
-The blockchain provides **tamper evidence**, not magical prevention of file modification.
-
-Someone can modify the blockchain file, but the integrity verifier should detect that the chain has been altered.
-
----
-
-# `> WHAT IS STORED?`
-
-Investigation evidence may contain:
-
-```text
-Input image hash
-      │
-      ▼
-Matched page URL
-      │
-      ▼
-Matched image URL
-      │
-      ▼
-Source domain
-      │
-      ▼
-Similarity score
-      │
-      ▼
-Search provider
-      │
-      ▼
-Timestamp
-```
+Instead, DogsEye records its cryptographic fingerprint.
 
 Example:
 
 ```json
 {
-    "input_image_hash": "sha256_hash_here",
-    "matched_page_url": "https://example.com/page",
-    "matched_image_url": "https://example.com/image.jpg",
-    "source": "example.com",
-    "similarity_score": 0.87,
-    "search_provider": "searchapi",
-    "timestamp": "2026-01-01T00:00:00+00:00"
+  "target_image": "input.jpg",
+  "evidence_file": {
+    "filename": "input.jpg",
+    "sha256": "..."
+  },
+  "total_candidates_found": 5,
+  "results": [
+    {
+      "page_url": "https://example.com/page",
+      "image_url": "https://example.com/image.jpg",
+      "source": "example.com",
+      "provider": "searchapi",
+      "title": "Example",
+      "search_rank": 1,
+      "author": null,
+      "verified": null,
+      "similarity_score": 0.91
+    }
+  ]
 }
 ```
 
-The input image itself does not need to be stored inside the blockchain.
-
-Instead:
-
-```text
-IMAGE FILE
-    │
-    ▼
-SHA-256 HASH
-    │
-    ▼
-IMAGE FINGERPRINT
-    │
-    ▼
-BLOCKCHAIN EVIDENCE
-```
-
-This makes it possible to associate evidence with a specific input image without storing the entire image inside every block.
-
 ---
 
-# `> BLOCKCHAIN INTEGRITY VERIFICATION`
+# `> CRYPTOGRAPHIC HASHING`
 
-The blockchain verifier checks the integrity of the chain.
+Location:
 
 ```text
-START
-  │
-  ▼
-LOAD BLOCKCHAIN
-  │
-  ▼
-CHECK GENESIS BLOCK
-  │
-  ▼
-FOR EACH BLOCK
-  │
-  ├── RECALCULATE BLOCK HASH
-  │
-  ├── DOES HASH MATCH?
-  │
-  ├── CHECK PREVIOUS HASH
-  │
-  └── DOES IT MATCH PREVIOUS BLOCK?
-  │
-  ▼
-VALID / INVALID
+blockchain/evidence_hasher.py
 ```
+
+DogsEye uses SHA-256 to create a deterministic hash of the evidence payload.
+
+The evidence is first serialized into canonical JSON:
+
+```text
+Evidence Dictionary
+       │
+       ▼
+Deterministic JSON
+       │
+       ▼
+SHA-256
+       │
+       ▼
+Evidence Hash
+```
+
+Canonicalization uses sorted JSON keys and deterministic separators so that equivalent evidence produces the same hash.
 
 Conceptually:
 
+```python
+canonical_evidence = json.dumps(
+    evidence,
+    sort_keys=True,
+    separators=(",", ":"),
+    ensure_ascii=False
+)
+
+evidence_hash = SHA256(
+    canonical_evidence
+)
+```
+
+This creates a fixed cryptographic fingerprint for the complete evidence record.
+
+---
+
+# `> BLOCKCHAIN EVIDENCE REGISTRY`
+
+DogsEye uses **Ethereum Sepolia** as the blockchain network for evidence registration.
+
 ```text
-FOR EACH BLOCK:
+                 EVIDENCE
+                     │
+                     ▼
+              SHA-256 HASH
+                     │
+                     ▼
+              EVIDENCE HASH
+                     │
+                     ▼
+             Ethereum Sepolia
+                     │
+                     ▼
+             Smart Contract
+                     │
+                     ▼
+             REGISTERED HASH
+```
 
-    calculate_hash(block)
+The system does not store the complete image on-chain.
 
-    IF calculated_hash != stored_hash:
-        CHAIN INVALID
+Instead, the cryptographic hash of the evidence is registered through the evidence registry smart contract.
 
-    IF current.previous_hash != previous.block_hash:
-        CHAIN INVALID
+The current network configuration is:
 
-    OTHERWISE:
-        CONTINUE
+```text
+Network:        Ethereum Sepolia
+Chain ID:       11155111
+```
 
-CHAIN VALID
+---
+
+# `> EVIDENCE REGISTRATION`
+
+The registration process is:
+
+```text
+1. Upload evidence
+        │
+        ▼
+2. Save evidence locally
+        │
+        ▼
+3. Run investigation
+        │
+        ▼
+4. Build evidence payload
+        │
+        ▼
+5. Hash evidence
+        │
+        ▼
+6. Convert hash to bytes32
+        │
+        ▼
+7. Submit transaction
+        │
+        ▼
+8. Ethereum Sepolia
+        │
+        ▼
+9. Evidence hash registered
+```
+
+The registry returns information such as:
+
+```json
+{
+  "success": true,
+  "evidence_hash": "...",
+  "transaction_hash": "0x...",
+  "block_number": 123456,
+  "contract_address": "0x...",
+  "network": "ethereum-sepolia"
+}
+```
+
+---
+
+# `> TAMPER DETECTION`
+
+DogsEye uses cryptographic hashing to make modifications to registered evidence detectable.
+
+The original evidence file is hashed before registration:
+
+```text
+ORIGINAL IMAGE
+      │
+      ▼
+   SHA-256
+      │
+      ▼
+IMAGE HASH A
+      │
+      ▼
+EVIDENCE PAYLOAD
+      │
+      ▼
+EVIDENCE HASH A
+      │
+      ▼
+ETHEREUM SEPOLIA
+```
+
+After the evidence has been registered, the local evidence file can be modified.
+
+For example:
+
+```text
+ORIGINAL IMAGE
+      │
+      │ MODIFY FILE
+      ▼
+MODIFIED IMAGE
+      │
+      ▼
+   SHA-256
+      │
+      ▼
+IMAGE HASH B
+```
+
+Because:
+
+```text
+IMAGE HASH A ≠ IMAGE HASH B
+```
+
+the resulting evidence hash also changes.
+
+The verifier can therefore detect that the current file no longer corresponds to the evidence committed to the blockchain.
+
+```text
+REGISTERED EVIDENCE
+        │
+        ▼
+BLOCKCHAIN HASH
+        │
+        │
+        │ compare
+        │
+        ▼
+CURRENT EVIDENCE
+        │
+        ▼
+CURRENT HASH
+        │
+        ▼
+     MATCH?
+      /   \
+    YES    NO
+     │      │
+     ▼      ▼
+   VALID  TAMPERED
+```
+
+### Important distinction
+
+The blockchain does not physically prevent someone from modifying a local evidence file.
+
+It provides an immutable external reference against which the current evidence can be checked.
+
+Therefore:
+
+```text
+Modification prevention     → No
+Modification detection      → Yes
+Cryptographic verification  → Yes
+Blockchain anchoring        → Yes
+```
+
+---
+
+# `> TAMPERING DEMO`
+
+The intended demonstration is:
+
+```text
+STEP 1
+Upload original image
+        │
+        ▼
+STEP 2
+Run investigation
+        │
+        ▼
+STEP 3
+Build evidence
+        │
+        ▼
+STEP 4
+Register evidence on Ethereum Sepolia
+        │
+        ▼
+STEP 5
+Verify
+        │
+        ▼
+       VALID
+```
+
+Then:
+
+```text
+STEP 6
+Modify the original image file
+        │
+        ▼
+STEP 7
+Verify again
+        │
+        ▼
+Current image hash changes
+        │
+        ▼
+Evidence hash changes
+        │
+        ▼
+Blockchain hash does not match
+        │
+        ▼
+     TAMPERED
+```
+
+This demonstrates that the blockchain record can be used as an integrity anchor for the evidence.
+
+---
+
+# `> BLOCKCHAIN VERIFICATION`
+
+The registry verification process is:
+
+```text
+CURRENT EVIDENCE
+       │
+       ▼
+CANONICALIZE
+       │
+       ▼
+SHA-256
+       │
+       ▼
+EVIDENCE HASH
+       │
+       ▼
+Ethereum Sepolia
+       │
+       ▼
+verifyEvidence()
+       │
+       ▼
+HASH EXISTS?
+     /     \
+   YES      NO
+    │        │
+    ▼        ▼
+ VALID     INVALID
+```
+
+The smart contract returns information associated with a registered evidence hash, including the submitting address and blockchain timestamp.
+
+Example verification result:
+
+```json
+{
+  "valid": true,
+  "evidence_hash": "...",
+  "submitted_by": "0x...",
+  "blockchain_timestamp": 1234567890,
+  "network": "ethereum-sepolia"
+}
 ```
 
 ---
@@ -751,83 +892,65 @@ CHAIN VALID
 ```text
 DogsEye/
 │
-├── main.py
-│
 ├── app.py
-│
+├── main.py
 ├── requirements.txt
-│
 ├── README.md
 │
-├── blockchain.json
-│
 ├── frontend/
-│   │
 │   └── index.html
 │
 ├── pipeline/
-│   │
 │   ├── __init__.py
-│   │
-│   └── integrated_pipeline.py
+│   └── evidence_builder.py
 │
 ├── search/
-│   │
 │   ├── __init__.py
-│   │
 │   ├── engine.py
-│   │
 │   ├── normalizer.py
-│   │
 │   ├── image_host.py
 │   │
 │   └── providers/
-│       │
 │       ├── __init__.py
-│       │
-│       ├── provider_primary.py
-│       │
-│       └── provider_secondary.py
-│
-├── face/
-│   │
-│   ├── __init__.py
-│   │
-│   └── verifier.py
+│       ├── searchapi.py
+│       └── openninja.py
 │
 ├── blockchain/
-│   │
 │   ├── __init__.py
-│   │
-│   ├── blockchain.py
-│   │
-│   └── verifier.py
+│   ├── ethereum_client.py
+│   ├── evidence_hasher.py
+│   └── evidence_registry.py
 │
 └── data/
-    │
     └── inputs/
 ```
+
+> File names inside `search/providers/` may differ depending on the current provider implementation.
 
 ---
 
 # `> REQUIREMENTS`
 
-DogsEye uses Python and the following primary dependencies:
+DogsEye is built primarily with Python.
+
+Core dependencies include:
 
 ```text
-requests
+Python
+FastAPI
+Uvicorn
+Requests
 python-dotenv
-
-insightface
-onnxruntime
-opencv-python
-numpy
-
-pydantic
-
-fastapi
-uvicorn
+NumPy
+Pydantic
 python-multipart
+Web3.py
+```
+
+The exact dependency versions are defined in:
+
+```text
+requirements.txt
 ```
 
 Recommended Python version:
@@ -836,20 +959,18 @@ Recommended Python version:
 Python 3.11
 ```
 
-Python 3.11 is recommended because some dependencies, particularly the machine learning and computer vision stack, may not yet provide compatible wheels for newer Python versions.
+Python 3.11 is recommended for broad compatibility with the project's dependency stack.
 
 ---
 
 # `> INSTALLATION`
 
-## 1. Clone or Download the Project
+## 1. Clone the Repository
 
 ```bash
 git clone <repository-url>
 cd DogsEye
 ```
-
-If the project was downloaded manually, open a terminal inside the project directory.
 
 ---
 
@@ -861,20 +982,26 @@ Windows:
 py -3.11 -m venv env
 ```
 
+Linux/macOS:
+
+```bash
+python3.11 -m venv env
+```
+
 ---
 
-## 3. Activate the Virtual Environment
+## 3. Activate the Environment
 
-Windows PowerShell:
+### Windows PowerShell
 
 ```powershell
 env\Scripts\activate
 ```
 
-When activated, your terminal should show something similar to:
+### Linux/macOS
 
-```text
-(env) PS D:\DogsEye>
+```bash
+source env/bin/activate
 ```
 
 ---
@@ -888,337 +1015,202 @@ pip install -r requirements.txt
 
 ---
 
-## 5. Configure Environment Variables
+# `> ENVIRONMENT VARIABLES`
 
-If the search providers require API keys, create a `.env` file in the project root.
+Create a `.env` file in the project root.
 
-Example:
+The exact variables depend on the provider implementations and Ethereum client configuration.
+
+Typical configuration may include:
 
 ```text
-SEARCHAPI_KEY=your_key_here
-FACEFINDER_API_KEY=your_key_here
+SEARCHAPI_KEY=your_searchapi_key
+OPENNINJA_API_KEY=your_openninja_key
+
+SEPOLIA_RPC_URL=your_sepolia_rpc_url
+PRIVATE_KEY=your_wallet_private_key
+CONTRACT_ADDRESS=your_deployed_contract_address
 ```
 
-The exact variable names depend on the provider implementations in the project.
+Use the variable names expected by the actual implementation.
 
-Do not commit `.env` files containing private API keys.
+**Never commit `.env` or private keys to GitHub.**
+
+Add the following to `.gitignore`:
+
+```text
+.env
+env/
+__pycache__/
+*.pyc
+```
 
 ---
 
-# `> RUNNING THE PROJECT`
+# `> RUNNING DOGSEYE`
 
-## Start the Backend
-
-From the project root:
+Start the FastAPI backend from the project root:
 
 ```bash
 uvicorn app:app --reload
 ```
 
-The backend should start on:
+The development server will normally be available at:
 
 ```text
 http://127.0.0.1:8000
 ```
 
-You can verify that the backend is running using:
+FastAPI also provides interactive API documentation at:
 
 ```text
-http://127.0.0.1:8000/api/health
+http://127.0.0.1:8000/docs
 ```
 
-Expected response:
+---
+
+# `> INVESTIGATION API`
+
+## `POST /api/investigate`
+
+Accepts an uploaded image and executes the investigation pipeline.
+
+```text
+Upload Image
+     │
+     ▼
+Save Image
+     │
+     ▼
+Run Investigation
+     │
+     ▼
+SearchAPI + OpenNinja
+     │
+     ▼
+Normalize
+     │
+     ▼
+Filter
+     │
+     ▼
+Deduplicate
+     │
+     ▼
+Classify
+     │
+     ▼
+Build Evidence
+     │
+     ▼
+Return Results
+```
+
+The endpoint returns both the investigation results and the generated evidence object.
+
+---
+
+# `> BLOCKCHAIN API`
+
+## `POST /api/blockchain/register`
+
+Registers an evidence hash on Ethereum Sepolia.
+
+Request:
 
 ```json
 {
-    "success": true,
-    "status": "online"
+  "evidence": {}
 }
 ```
+
+The backend:
+
+```text
+Evidence
+   ↓
+SHA-256
+   ↓
+bytes32
+   ↓
+Ethereum Transaction
+   ↓
+Sepolia
+```
+
+---
+
+## `POST /api/blockchain/verify`
+
+Verifies whether the evidence hash exists on-chain.
+
+The backend recalculates the hash of the current evidence file before verification.
+
+This is important for the tamper-detection workflow because the verification process should not blindly trust a previously stored file hash.
 
 ---
 
 # `> RUNNING AN INVESTIGATION`
 
-1. Start the FastAPI backend.
+1. Start the backend.
 
 ```bash
 uvicorn app:app --reload
 ```
 
-2. Open:
-
-```text
-frontend/index.html
-```
+2. Open the DogsEye frontend.
 
 3. Select an image.
 
-4. Click:
+4. Execute the investigation.
 
-```text
-EXECUTE
-```
+5. Review the discovered candidates.
 
-5. DogsEye processes the image.
+6. Review the generated evidence.
 
-6. Results are separated into:
+7. Register the evidence on Ethereum Sepolia.
 
-```text
-┌─────────────────┐
-│    PROFILES     │
-└─────────────────┘
+8. Verify the evidence.
 
-┌─────────────────┐
-│      POSTS      │
-└─────────────────┘
-
-┌─────────────────┐
-│ EXTERNAL LINKS  │
-└─────────────────┘
-```
+A successful verification should indicate that the calculated evidence hash exists on-chain.
 
 ---
 
-# `> RUNNING FROM THE COMMAND LINE`
+# `> SEARCH PROVIDER STRATEGY`
 
-Depending on your current pipeline configuration, the integrated pipeline can also be tested directly.
-
-Example:
-
-```bash
-python -m pipeline.integrated_pipeline data/inputs/sample_image.jpg
-```
-
-Or, if configured as a direct script:
-
-```bash
-python pipeline/integrated_pipeline.py data/inputs/sample_image.jpg
-```
-
-The exact command may depend on your project imports and package structure.
-
----
-
-# `> TESTING BLOCKCHAIN INTEGRITY`
-
-The blockchain can be tested using the blockchain verifier.
-
-The intended workflow is:
+DogsEye uses a primary/secondary provider model:
 
 ```text
-CREATE BLOCKCHAIN
-       │
-       ▼
-ADD EVIDENCE
-       │
-       ▼
-VERIFY CHAIN
-       │
-       ▼
-VALID
+                    INPUT IMAGE
+                         │
+             ┌───────────┴───────────┐
+             ▼                       ▼
+         SEARCHAPI               OPENNINJA
+         PRIMARY                SECONDARY
+             │                       │
+             └───────────┬───────────┘
+                         ▼
+                  RESULT AGGREGATION
+                         │
+                         ▼
+                    NORMALIZATION
+                         │
+                         ▼
+                   DEDUPLICATION
+                         │
+                         ▼
+                   FINAL RESULTS
 ```
 
-To test tampering:
+Using multiple providers reduces dependence on a single external service and allows results from different indexes to be combined.
 
-```text
-CREATE BLOCKCHAIN
-       │
-       ▼
-ADD EVIDENCE
-       │
-       ▼
-VERIFY → VALID
-       │
-       ▼
-MANUALLY MODIFY blockchain.json
-       │
-       ▼
-VERIFY AGAIN
-       │
-       ▼
-INVALID
-```
-
-Possible tampering tests include:
-
-```text
-[1] Modify evidence data.
-
-[2] Modify a stored similarity score.
-
-[3] Modify a page URL.
-
-[4] Modify an image hash.
-
-[5] Modify a block hash.
-
-[6] Modify a previous_hash value.
-
-[7] Delete a block.
-
-[8] Change a block index.
-
-[9] Insert a fake block.
-```
-
-The verifier should detect integrity failures when the hash relationships are broken.
-
----
-
-# `> KNOWN LIMITATIONS`
-
-DogsEye is a prototype investigation system and has several limitations.
-
-## Search Provider Dependency
-
-Search quality depends heavily on external providers.
-
-```text
-DogsEye
-   │
-   ▼
-Search Provider
-   │
-   ▼
-Provider Index
-   │
-   ▼
-Available Results
-```
-
-DogsEye cannot discover an image occurrence that is not available through the provider's searchable index.
-
----
-
-## API Limits
-
-External APIs may have:
-
-```text
-Rate limits
-Trial limits
-Credit limits
-Request quotas
-Temporary outages
-```
-
-A provider may stop returning results if an account reaches its quota or if the provider is unavailable.
-
----
-
-## Candidate URL Accuracy
-
-A provider may return:
-
-```text
-Correct image URL
-        +
-Incorrect page URL
-```
-
-or:
-
-```text
-Relevant page
-        +
-Missing direct image URL
-```
-
-DogsEye displays the information returned by the providers after normalization. Provider-level inaccuracies may therefore affect the final investigation output.
-
----
-
-## Face Verification Limitations
-
-Face verification may fail when:
-
-```text
-Face is too small
-Face is rotated
-Image quality is poor
-Face is partially hidden
-Multiple faces are present
-Candidate image cannot be downloaded
-Candidate URL blocks automated requests
-```
-
-Face verification should therefore be considered an additional signal rather than an absolute guarantee.
-
----
-
-## Social Media Access Restrictions
-
-Some platforms actively restrict automated image downloads.
-
-Examples include restrictions such as:
-
-```text
-HTTP 403
-Authentication requirements
-Anti-bot protection
-CDN restrictions
-Expired media URLs
-```
-
-As a result, a valid social media result may be discovered by a search provider but its image may not be downloadable for local verification.
-
----
-
-## Custom Local Blockchain
-
-The current blockchain implementation is local.
-
-```text
-CURRENT IMPLEMENTATION
-
-DogsEye
-   │
-   ▼
-blockchain.json
-```
-
-It does not currently provide:
-
-```text
-Distributed consensus
-Public decentralization
-Mining
-Proof of Work
-Proof of Stake
-Public network validation
-Smart contracts
-Immutable external storage
-```
-
-The blockchain provides a lightweight cryptographically linked evidence ledger suitable for demonstrating tamper detection.
-
-A production system could replace this component with:
-
-```text
-Ethereum
-Polygon
-Hyperledger
-IPFS + blockchain anchoring
-Cloud timestamping services
-Other distributed ledger systems
-```
-
----
-
-## Local Storage
-
-The blockchain is currently stored locally.
-
-If the entire blockchain file is replaced together with all hashes being recalculated by an attacker, a local verifier cannot independently determine which version is historically authentic.
-
-For stronger evidence guarantees, future versions could anchor blockchain hashes to an external immutable or independently controlled system.
+Provider availability and result quality depend on the external services themselves.
 
 ---
 
 # `> SECURITY MODEL`
 
-DogsEye currently focuses on:
+DogsEye focuses on three primary properties:
 
 ```text
 INTEGRITY
@@ -1228,56 +1220,257 @@ TRACEABILITY
 TAMPER DETECTION
 ```
 
-It does not claim to provide:
+The system uses:
 
 ```text
-Perfect source attribution
-Guaranteed identity verification
-Complete internet coverage
-Public blockchain immutability
-Legal proof of identity
+SHA-256
+   +
+Canonical JSON
+   +
+Ethereum Sepolia
 ```
 
-Search results should be treated as investigation evidence requiring human interpretation.
+to create an externally verifiable integrity reference for investigation evidence.
+
+DogsEye does **not** claim to provide:
+
+```text
+Guaranteed identity attribution
+Complete internet coverage
+Guaranteed reverse-image-search results
+Absolute source authenticity
+Legal proof of identity
+Protection against compromise of the investigator's wallet
+```
+
+Search results remain investigative signals that require human interpretation.
+
+---
+
+# `> LIMITATIONS`
+
+## Search Provider Dependency
+
+Search results depend on the indexes and availability of external providers.
+
+An image may exist online without being returned by a particular reverse image search provider.
+
+```text
+DOGSEYE
+   │
+   ▼
+SEARCH PROVIDER
+   │
+   ▼
+PROVIDER INDEX
+   │
+   ▼
+AVAILABLE RESULTS
+```
+
+---
+
+## API Limits
+
+External providers may impose:
+
+```text
+Rate limits
+Request quotas
+Credit limits
+Authentication requirements
+Temporary outages
+```
+
+A provider becoming unavailable can reduce the number of discovered candidates.
+
+The secondary provider helps provide additional coverage but does not guarantee complete results.
+
+---
+
+## Search Result Accuracy
+
+Providers may return incomplete or imperfect metadata.
+
+For example:
+
+```text
+Correct image
+     +
+Incorrect page URL
+```
+
+or:
+
+```text
+Relevant page
+     +
+Missing direct image URL
+```
+
+DogsEye normalizes and processes the information returned by the providers but cannot guarantee provider-level accuracy.
+
+---
+
+## Social Media Restrictions
+
+Some platforms restrict automated access to pages or images.
+
+Possible issues include:
+
+```text
+HTTP 403
+Authentication requirements
+Anti-bot protection
+CDN restrictions
+Expired media URLs
+Robots restrictions
+```
+
+Consequently, a search provider may identify a relevant page while DogsEye cannot directly retrieve all associated content.
+
+---
+
+## Blockchain Dependency
+
+Evidence registration depends on:
+
+```text
+Ethereum Sepolia
+     +
+RPC provider
+     +
+Wallet
+     +
+Smart contract
+     +
+Sufficient test ETH
+```
+
+If the RPC endpoint, wallet, network, or smart contract is unavailable, blockchain registration cannot complete.
+
+---
+
+## Local Evidence Storage
+
+The original uploaded evidence file is stored locally during the investigation.
+
+The blockchain stores the cryptographic evidence reference rather than the complete image.
+
+Therefore, the blockchain alone does not contain the original evidence artifact.
+
+---
+
+# `> WHY BLOCKCHAIN?`
+
+The purpose of the blockchain component is not to store large image files.
+
+Instead, DogsEye uses the blockchain as an external integrity anchor.
+
+```text
+                    ORIGINAL EVIDENCE
+                           │
+                           ▼
+                       SHA-256
+                           │
+                           ▼
+                    EVIDENCE HASH
+                           │
+                           ▼
+                    ETHEREUM SEPOLIA
+                           │
+                           ▼
+                  IMMUTABLE REFERENCE
+```
+
+Later, the evidence can be hashed again:
+
+```text
+CURRENT EVIDENCE
+       │
+       ▼
+    SHA-256
+       │
+       ▼
+CURRENT HASH
+       │
+       ▼
+COMPARE WITH ON-CHAIN HASH
+```
+
+If the hashes match, the evidence corresponds to the registered record.
+
+If they do not match, the evidence has changed or is not the same evidence that was registered.
+
+---
+
+# `> DESIGN PRINCIPLES`
+
+DogsEye is designed around several principles:
+
+### Provider Independence
+
+External search providers are isolated from the core pipeline.
+
+### Deterministic Evidence
+
+Evidence is canonicalized before hashing.
+
+### Cryptographic Integrity
+
+SHA-256 provides a fixed fingerprint for the evidence payload.
+
+### External Anchoring
+
+Evidence hashes are registered on Ethereum Sepolia.
+
+### Detectable Tampering
+
+Changes to the evidence result in a different cryptographic fingerprint.
+
+### Separation of Concerns
+
+```text
+SEARCH
+   ↓
+NORMALIZATION
+   ↓
+CLASSIFICATION
+   ↓
+EVIDENCE
+   ↓
+HASHING
+   ↓
+BLOCKCHAIN
+```
+
+Each stage has a separate responsibility.
 
 ---
 
 # `> FUTURE IMPROVEMENTS`
 
-Possible future additions include:
+Potential future additions include:
 
 ```text
-[+] More reverse image search providers
-
+[+] Additional reverse image search providers
 [+] Improved candidate ranking
-
-[+] Better social media URL classification
-
-[+] Automatic source confidence scoring
-
+[+] Better result confidence scoring
 [+] OCR and metadata extraction
-
-[+] Better face verification fallback strategies
-
-[+] Asynchronous processing
-
+[+] Improved social media classification
 [+] Investigation history
-
 [+] Database-backed evidence storage
-
-[+] User authentication
-
-[+] Public blockchain hash anchoring
-
-[+] IPFS evidence storage
-
+[+] Object storage for evidence artifacts
 [+] Cryptographic timestamps
-
-[+] Docker deployment
-
+[+] IPFS evidence storage
+[+] Stronger evidence provenance
+[+] User authentication
+[+] Role-based access control
+[+] Automated forensic report generation
+[+] Improved blockchain gas management
+[+] Mainnet or production-chain deployment
+[+] Dockerized deployment
 [+] Cloud deployment
-
-[+] Advanced forensic reporting
 ```
 
 ---
@@ -1285,10 +1478,16 @@ Possible future additions include:
 # `> QUICK COMMAND REFERENCE`
 
 ```bash
+# Clone
+git clone <repository-url>
+
+# Enter project
+cd DogsEye
+
 # Create virtual environment
 py -3.11 -m venv env
 
-# Activate environment
+# Activate
 env\Scripts\activate
 
 # Install dependencies
@@ -1296,12 +1495,93 @@ pip install -r requirements.txt
 
 # Start backend
 uvicorn app:app --reload
+```
 
-# Test backend health
-http://127.0.0.1:8000/api/health
+Development server:
 
-# Run an investigation through the frontend
-frontend/index.html
+```text
+http://127.0.0.1:8000
+```
+
+API documentation:
+
+```text
+http://127.0.0.1:8000/docs
+```
+
+---
+
+# `> END-TO-END FLOW`
+
+```text
+┌──────────────────────────────────────────────────────────────┐
+│                         DOGSEYE                              │
+└──────────────────────────────────────────────────────────────┘
+
+                         INPUT IMAGE
+                              │
+                              ▼
+                    SAVE EVIDENCE FILE
+                              │
+                              ▼
+                  ┌─────────────────────┐
+                  │  REVERSE IMAGE      │
+                  │      SEARCH         │
+                  └──────────┬──────────┘
+                             │
+                    ┌────────┴────────┐
+                    ▼                 ▼
+                SEARCHAPI          OPENNINJA
+                PRIMARY            SECONDARY
+                    │                 │
+                    └────────┬────────┘
+                             ▼
+                      RESULT AGGREGATION
+                             │
+                             ▼
+                       NORMALIZATION
+                             │
+                             ▼
+                         FILTERING
+                             │
+                             ▼
+                       DEDUPLICATION
+                             │
+                             ▼
+                       CLASSIFICATION
+                             │
+                 ┌───────────┼───────────┐
+                 ▼           ▼           ▼
+              PROFILES      POSTS      EXTERNAL
+                 │           │           │
+                 └───────────┼───────────┘
+                             ▼
+                      EVIDENCE BUILDER
+                             │
+                             ▼
+                     SHA-256 FILE HASH
+                             │
+                             ▼
+                    CANONICAL EVIDENCE
+                             │
+                             ▼
+                     SHA-256 EVIDENCE
+                             │
+                             ▼
+                    ETHEREUM SEPOLIA
+                             │
+                             ▼
+                     EVIDENCE REGISTERED
+                             │
+                             ▼
+                         VERIFY
+                             │
+                    ┌────────┴────────┐
+                    ▼                 ▼
+                  MATCH            NO MATCH
+                    │                 │
+                    ▼                 ▼
+                  VALID            TAMPERED
 ```
 
 ---
@@ -1311,9 +1591,9 @@ frontend/index.html
 ```text
 ┌──────────────────────────────────────────────────────────┐
 │                                                          │
-│                  DogsEye Investigation System            │
+│                  DogsEye Investigation System             │
 │                                                          │
-│     SEARCH  →  VERIFY  →  RECORD  →  DETECT TAMPERING    │
+│       SEARCH → ANALYZE → PRESERVE → VERIFY INTEGRITY     │
 │                                                          │
 └──────────────────────────────────────────────────────────┘
 ```
