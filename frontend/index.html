@@ -2,1093 +2,580 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>DOGSEYE</title>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOGSEYE // NET_SEARCH</title>
+    
+    <!-- Y2K Pixel Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&display=swap" rel="stylesheet">
+    
     <style>
-        * {
-            box-sizing: border-box;
+        /* =====================================================
+           THEME VARIABLES (Custom Palette)
+           #462C7D, #831C91, #D552A3, #FF70BF
+        ===================================================== */
+        :root {
+            --bg-deep: #1a0f2e;
+            --bg-panel: #261747;
+            --text-main: #fce8f3;
+            --text-muted: #b891b8;
+            
+            --color-dark-purple: #462C7D;
+            --color-deep-magenta: #831C91;
+            --color-mid-pink: #D552A3;
+            --color-bright-pink: #FF70BF;
+            
+            --border-color: #5c3578;
+            --bg-highlight: #34205c;
+            
+            --font-heading: 'Press Start 2P', monospace;
+            --font-body: 'VT323', monospace;
         }
 
-        :root {
-            --bg: #020403;
-            --terminal: #050807;
-            --border: #163d25;
-            --green: #00ff66;
-            --green-dim: #00a844;
-            --green-dark: #003b19;
-            --text: #a8ffbd;
-            --muted: #4f8f61;
-            --red: #ff4d4d;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            margin: 0;
+            background-color: var(--bg-deep);
+            background-image: 
+                radial-gradient(circle at center, #361b5c 0%, var(--bg-deep) 100%),
+                url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAABZJREFUeNpi2r9//38bIxsTAxIgAQYAW7sD3X3b9JAAAAAASUVORK5CYII='); 
+            color: var(--text-main);
+            font-family: var(--font-body);
+            font-size: 19px;
             min-height: 100vh;
-
-            background:
-                radial-gradient(
-                    circle at center,
-                    #06150a 0%,
-                    #020403 70%
-                );
-
-            color: var(--text);
-
-            font-family:
-                "Courier New",
-                monospace;
-
-            overflow: hidden;
+            overflow-x: hidden;
         }
 
-        .terminal {
-            width: min(1400px, 96vw);
-            height: min(900px, 94vh);
-
-            margin: 3vh auto;
-
-            background: var(--terminal);
-
-            border: 1px solid var(--border);
-
-            box-shadow:
-                0 0 20px rgba(0, 255, 102, 0.08),
-                inset 0 0 30px rgba(0, 255, 102, 0.02);
-
-            display: flex;
-            flex-direction: column;
+        /* =====================================================
+           CRT EFFECTS
+        ===================================================== */
+        .crt-scanlines {
+            position: fixed; inset: 0; z-index: 9998; pointer-events: none;
+            background: repeating-linear-gradient(to bottom, rgba(255,112,191,0.015) 0px, rgba(255,112,191,0.015) 1px, transparent 1px, transparent 3px);
         }
 
-        /* =========================
-           HEADER
-        ========================= */
-
-        .terminal-header {
-            height: 48px;
-
-            border-bottom: 1px solid var(--border);
-
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-
-            padding: 0 18px;
-
-            flex-shrink: 0;
+        .crt-flicker {
+            position: fixed; inset: 0; z-index: 9999; pointer-events: none;
+            background: rgba(0, 0, 0, 0.04);
+            animation: flicker 0.2s infinite alternate;
         }
 
-        .title {
-            color: var(--green);
-
-            font-size: 18px;
-            font-weight: bold;
-
-            letter-spacing: 3px;
-
-            text-shadow:
-                0 0 8px rgba(0, 255, 102, 0.7);
+        @keyframes flicker {
+            0% { opacity: 0.02; } 100% { opacity: 0.06; }
         }
 
-        .status {
-            font-size: 12px;
-
-            color: var(--green-dim);
-
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        /* =====================================================
+           BOOT SEQUENCE ANIMATION
+        ===================================================== */
+        #boot-screen {
+            position: fixed; inset: 0; background: var(--bg-deep);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 10000; transition: opacity 1.2s ease-out;
         }
 
-        .status-dot {
-            width: 8px;
-            height: 8px;
+        .boot-content { text-align: center; }
 
-            border-radius: 50%;
-
-            background: var(--green);
-
-            box-shadow:
-                0 0 8px var(--green);
+        .loading-bar-container {
+            width: 300px; height: 10px; border: 1px solid var(--color-bright-pink);
+            margin: 20px auto; padding: 2px;
         }
 
-        .status-dot.processing {
-            animation: pulse 0.8s infinite;
+        .loading-bar {
+            height: 100%; background: var(--color-mid-pink); width: 0%;
+            animation: loadBar 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
 
-        @keyframes pulse {
-            0% {
-                opacity: 0.3;
-            }
-
-            50% {
-                opacity: 1;
-            }
-
-            100% {
-                opacity: 0.3;
-            }
+        @keyframes loadBar {
+            0% { width: 0%; } 40% { width: 45%; } 80% { width: 80%; } 100% { width: 100%; }
         }
 
-        /* =========================
-           UPLOAD
-        ========================= */
-
-        .control-bar {
-            padding: 14px 18px;
-
-            border-bottom: 1px solid var(--border);
-
-            display: flex;
-            gap: 10px;
-            align-items: center;
-
-            flex-shrink: 0;
+        /* =====================================================
+           LAYOUT & WINDOWS
+        ===================================================== */
+        #app-container {
+            max-width: 1400px; margin: 0 auto; padding: 15px;
+            opacity: 0; transform: translateY(10px);
+            transition: opacity 1.5s ease, transform 1.5s ease;
         }
 
-        .file-input-wrapper {
-            flex: 1;
+        #app-container.loaded { opacity: 1; transform: translateY(0); }
 
-            position: relative;
+        .app-header {
+            display: flex; justify-content: space-between; align-items: flex-end;
+            margin-bottom: 20px; border-bottom: 2px solid var(--color-deep-magenta); padding-bottom: 10px;
         }
 
-        input[type="file"] {
+        .logo-text { font-family: var(--font-heading); font-size: 26px; letter-spacing: 1px; color: var(--text-main); text-shadow: 2px 2px var(--color-dark-purple); }
+        .logo-subtle { color: var(--color-bright-pink); }
+
+        .ticker-wrap {
+            width: 350px; overflow: hidden; background: #000;
+            border: 1px solid var(--color-dark-purple); padding: 5px; font-size: 15px;
+        }
+        .ticker-move {
+            display: inline-block; white-space: nowrap;
+            animation: ticker 12s linear infinite; color: var(--color-bright-pink);
+        }
+        @keyframes ticker { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+
+        .window {
+            background: var(--bg-panel); border: 2px solid var(--color-dark-purple);
+            box-shadow: 4px 4px 0px rgba(0,0,0,0.8);
+            margin-bottom: 15px;
+        }
+
+        .window-titlebar {
+            background: var(--color-dark-purple); color: var(--text-main); padding: 7px 10px;
+            font-family: var(--font-heading); font-size: 9px; letter-spacing: 1px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .bg-purple { background: var(--color-dark-purple); color: #fff; }
+        .bg-magenta { background: var(--color-deep-magenta); color: #fff; }
+        .bg-pink { background: var(--color-mid-pink); color: #fff; }
+
+        .window-controls span { margin-left: 5px; cursor: pointer; color: inherit; opacity: 0.7; }
+        .window-controls span:hover { opacity: 1; }
+        .window-content { padding: 15px; }
+
+        /* =====================================================
+           INPUTS & BUTTONS
+        ===================================================== */
+        .upload-content { display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; }
+
+        .file-input-wrapper { display: flex; align-items: center; gap: 15px; min-width: 0; flex: 1; }
+        input[type="file"] { display: none; }
+
+        .custom-file-upload {
+            font-family: var(--font-heading); font-size: 10px; color: var(--text-main);
+            border: 1px solid var(--color-mid-pink); padding: 8px 14px; cursor: pointer;
+            transition: all 0.2s; background: var(--color-dark-purple); white-space: nowrap;
+        }
+        .custom-file-upload:hover { background: var(--color-deep-magenta); }
+        .file-name { color: var(--text-muted); font-size: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        .y2k-button {
+            font-family: var(--font-heading); font-size: 11px;
+            background: var(--color-bright-pink); color: #1a0f2e; border: 2px solid #fff;
+            padding: 10px 20px; cursor: pointer; box-shadow: 3px 3px 0px var(--color-dark-purple);
+            transition: transform 0.1s, box-shadow 0.1s; white-space: nowrap;
+        }
+        .y2k-button:hover:not(:disabled) { transform: translate(1px, 1px); box-shadow: 1px 1px 0px var(--color-dark-purple); background: #ff8cd1; }
+        .y2k-button:disabled { opacity: 0.5; filter: grayscale(100%); cursor: not-allowed; }
+
+        .y2k-button-small {
+            font-family: var(--font-heading); font-size: 9px; padding: 6px 10px;
+            background: var(--color-deep-magenta); color: #fff; border: 1px solid #fff; cursor: pointer;
+        }
+        .y2k-button-small:hover:not(:disabled) { background: var(--color-bright-pink); color: #000; }
+
+        /* =====================================================
+           RESULTS GRID (3 Columns forced into a single row, no scrolling)
+        ===================================================== */
+        .results-grid { 
+            display: grid; 
+            grid-template-columns: repeat(3, minmax(0, 1fr)); 
+            gap: 15px; 
+            margin-bottom: 15px; 
             width: 100%;
-
-            color: var(--muted);
-
-            font-family: inherit;
-
-            font-size: 12px;
         }
 
-        input[type="file"]::file-selector-button {
-            background: transparent;
-
-            border: 1px solid var(--green-dark);
-
-            color: var(--green);
-
-            padding: 7px 12px;
-
-            margin-right: 12px;
-
-            font-family: inherit;
-
-            cursor: pointer;
-        }
-
-        input[type="file"]::file-selector-button:hover {
-            background: var(--green-dark);
-        }
-
-        button {
-            background: transparent;
-
-            border: 1px solid var(--green);
-
-            color: var(--green);
-
-            padding: 8px 18px;
-
-            font-family: inherit;
-
-            font-size: 12px;
-
-            cursor: pointer;
-
-            transition: 0.15s;
-        }
-
-        button:hover {
-            background: var(--green);
-
-            color: #000;
-
-            box-shadow:
-                0 0 10px rgba(0, 255, 102, 0.4);
-        }
-
-        button:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-
-        /* =========================
-           RESULTS
-        ========================= */
-
-        .results-grid {
-            flex: 1;
-
-            min-height: 0;
-
-            display: grid;
-
-            grid-template-columns:
-                repeat(3, 1fr);
-
-            gap: 10px;
-
-            padding: 12px;
-        }
-
-        .panel {
-            border: 1px solid var(--border);
-
-            display: flex;
-            flex-direction: column;
-
+        .results-grid .window {
             min-width: 0;
-            min-height: 0;
-
-            background:
-                linear-gradient(
-                    180deg,
-                    rgba(0, 255, 102, 0.025),
-                    transparent
-                );
+            margin-bottom: 0;
         }
 
-        .panel-header {
+        .results-list { 
+            list-style: none; 
+            padding: 8px; 
+            height: 280px; 
+            overflow-y: auto; 
+            overflow-x: hidden;
+        }
+
+        /* Scrollbar */
+        .results-list::-webkit-scrollbar { width: 6px; }
+        .results-list::-webkit-scrollbar-track { background: #000; }
+        .results-list::-webkit-scrollbar-thumb { background: var(--color-deep-magenta); }
+
+        /* Interactive Result Box */
+        .result-item {
+            background: #140b24;
+            border: 1px solid var(--border-color);
+            margin-bottom: 8px;
             padding: 10px;
-
-            border-bottom: 1px solid var(--border);
-
-            color: var(--green);
-
-            font-size: 12px;
-
-            display: flex;
-            justify-content: space-between;
-
-            flex-shrink: 0;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+            animation: popIn 0.4s ease-out forwards; 
+            opacity: 0; transform: translateY(5px);
+            overflow: hidden;
+            word-break: break-all;
         }
 
-        .count {
-            color: var(--muted);
+        .result-item:hover { background: var(--bg-highlight); border-color: var(--color-bright-pink); }
+        .result-item.expanded { border-left: 3px solid var(--color-bright-pink); background: var(--bg-highlight); }
+
+        @keyframes popIn { to { opacity: 1; transform: translateY(0); } }
+
+        /* Summary (Always Visible) */
+        .result-summary {
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 17px; color: var(--text-main); pointer-events: none;
+            gap: 10px;
+        }
+        
+        .url-short {
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
+            flex: 1; min-width: 0;
         }
 
-        .results {
-            list-style: none;
+        .score-badge { color: var(--color-bright-pink); font-size: 15px; white-space: nowrap; }
 
-            margin: 0;
-            padding: 8px;
-
-            overflow-y: auto;
-
-            flex: 1;
+        /* Details (Hidden by Default) */
+        .result-details {
+            display: none;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed var(--border-color);
+            font-size: 15px;
+            color: var(--text-muted);
+            line-height: 1.3;
+            word-break: break-all;
         }
 
-        .result {
-            padding: 9px;
+        .result-details div { margin-bottom: 5px; }
+        .result-details strong { color: var(--color-bright-pink); font-weight: normal; }
+        .result-details a { color: var(--color-mid-pink); text-decoration: none; border-bottom: 1px solid transparent; transition: 0.2s; }
+        .result-details a:hover { color: var(--text-main); border-bottom: 1px solid var(--text-main); }
 
-            margin-bottom: 7px;
-
-            border-left: 2px solid var(--green-dark);
-
-            background:
-                rgba(0, 255, 102, 0.02);
-
-            font-size: 11px;
+        /* =====================================================
+           BLOCKCHAIN TERMINAL
+        ===================================================== */
+        .chain-content { display: flex; flex-direction: column; gap: 10px; }
+        .chain-actions { display: flex; gap: 10px; }
+        .chain-output-container {
+            background: #000; border: 1px solid var(--color-dark-purple); padding: 12px; min-height: 90px;
         }
-
-        .result:hover {
-            border-left-color: var(--green);
-
-            background:
-                rgba(0, 255, 102, 0.05);
-        }
-
-        .result a {
-            color: var(--text);
-
-            text-decoration: none;
-
-            word-break: break-word;
-        }
-
-        .result a:hover {
-            color: var(--green);
-        }
-
-        .meta {
-            margin-top: 7px;
-
-            display: flex;
-            justify-content: space-between;
-
-            gap: 8px;
-
-            color: var(--muted);
-
-            font-size: 10px;
-        }
-
-        .verified {
-            color: var(--green);
-        }
-
-        .unverified {
-            color: #a0a0a0;
-        }
-
-        .empty {
-            color: var(--muted);
-
-            font-size: 11px;
-
-            padding: 10px;
-        }
-
-        /* =========================
-           MOBILE
-        ========================= */
-
-        @media (max-width: 850px) {
-
-            body {
-                overflow: auto;
-            }
-
-            .terminal {
-                height: auto;
-                min-height: 94vh;
-            }
-
-            .results-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .panel {
-                height: 300px;
-            }
-        }
-
+        #blockchainOutput { font-family: var(--font-body); font-size: 17px; color: var(--color-bright-pink); white-space: pre-wrap; word-break: break-word; }
     </style>
 </head>
-
-
 <body>
 
-<div class="terminal">
+    <!-- CRT Overlays -->
+    <div class="crt-scanlines"></div>
+    <div class="crt-flicker"></div>
 
-    <!-- HEADER -->
-
-    <div class="terminal-header">
-
-        <div class="title">
-            DOGSEYE
+    <!-- Boot Sequence Screen -->
+    <div id="boot-screen">
+        <div class="boot-content">
+            <h1 class="logo-text">DOGSEYE<span class="logo-subtle">.OS</span></h1>
+            <div class="loading-bar-container">
+                <div class="loading-bar"></div>
+            </div>
+            <p style="color: var(--text-muted); font-size: 17px; letter-spacing: 2px;">booting system files...</p>
         </div>
-
-        <div class="status">
-
-            <span
-                class="status-dot"
-                id="statusDot"
-            ></span>
-
-            <span id="statusText">
-                SYSTEM ONLINE
-            </span>
-
-        </div>
-
     </div>
 
+    <!-- Main Application -->
+    <main id="app-container" class="hidden">
+        
+        <header class="app-header">
+            <h1 class="logo-text">DOGSEYE<span class="logo-subtle">.EXE</span></h1>
+            <div class="ticker-wrap">
+                <div class="ticker-move">
+                    <span id="systemNotification">WELCOME TO DOGSEYE // WAITING FOR IMAGE UPLOAD // V 2.1</span>
+                </div>
+            </div>
+        </header>
 
-    <!-- CONTROL -->
+        <!-- Input Section -->
+        <section class="window upload-window">
+            <div class="window-titlebar">
+                <span>FILE_UPLOAD.APP</span>
+                <div class="window-controls"><span>_</span><span>□</span><span>x</span></div>
+            </div>
+            <div class="window-content upload-content">
+                <div class="file-input-wrapper">
+                    <label for="imageInput" class="custom-file-upload">
+                        [ SELECT IMAGE ]
+                    </label>
+                    <input type="file" id="imageInput" accept="image/*">
+                    <span id="fileName" class="file-name">no_file.jpg</span>
+                </div>
+                <button id="runButton" class="y2k-button">EXECUTE</button>
+            </div>
+        </section>
 
-    <div class="control-bar">
-
-        <div class="file-input-wrapper">
-
-            <input
-                type="file"
-                id="imageInput"
-                accept="image/*"
-            >
-
-        </div>
-
-        <button
-            id="runButton"
-            onclick="runPipeline()"
-        >
-            EXECUTE
-        </button>
-
-    </div>
-
-
-    <!-- RESULTS -->
-
-    <div class="results-grid">
-
-
-        <!-- PROFILES -->
-
-        <div class="panel">
-
-            <div class="panel-header">
-
-                <span>
-                    PROFILES
-                </span>
-
-                <span
-                    class="count"
-                    id="profilesCount"
-                >
-                    0
-                </span>
-
+        <!-- Results Grid (Forced into a single row, no scrolling) -->
+        <section class="results-grid">
+            
+            <!-- Profiles Window -->
+            <div class="window">
+                <div class="window-titlebar bg-purple">
+                    <span>PROFILES</span>
+                    <span class="counter" id="profilesCount">[000]</span>
+                </div>
+                <ul class="results-list" id="profilesList"></ul>
             </div>
 
-            <ul
-                class="results"
-                id="profilesList"
-            >
-                <div class="empty">
-                    Waiting for input...
+            <!-- Posts Window -->
+            <div class="window">
+                <div class="window-titlebar bg-magenta">
+                    <span>POSTS</span>
+                    <span class="counter" id="postsCount">[000]</span>
                 </div>
-            </ul>
-
-        </div>
-
-
-        <!-- POSTS -->
-
-        <div class="panel">
-
-            <div class="panel-header">
-
-                <span>
-                    POSTS
-                </span>
-
-                <span
-                    class="count"
-                    id="postsCount"
-                >
-                    0
-                </span>
-
+                <ul class="results-list" id="postsList"></ul>
             </div>
 
-            <ul
-                class="results"
-                id="postsList"
-            >
-                <div class="empty">
-                    Waiting for input...
+            <!-- External Links Window -->
+            <div class="window">
+                <div class="window-titlebar bg-pink">
+                    <span>EXTERNAL</span>
+                    <span class="counter" id="linksCount">[000]</span>
                 </div>
-            </ul>
-
-        </div>
-
-
-        <!-- EXTERNAL -->
-
-        <div class="panel">
-
-            <div class="panel-header">
-
-                <span>
-                    EXTERNAL LINKS
-                </span>
-
-                <span
-                    class="count"
-                    id="externalCount"
-                >
-                    0
-                </span>
-
+                <ul class="results-list" id="linksList"></ul>
             </div>
 
-            <ul
-                class="results"
-                id="externalList"
-            >
-                <div class="empty">
-                    Waiting for input...
+        </section>
+
+        <!-- Blockchain Section -->
+        <section class="window chain-window">
+            <div class="window-titlebar">
+                <span>EVIDENCE_CHAIN // SEPOLIA</span>
+            </div>
+            <div class="window-content chain-content">
+                <div class="chain-actions">
+                    <button id="registerButton" class="y2k-button-small" disabled>REGISTER</button>
+                    <button id="verifyButton" class="y2k-button-small" disabled>VERIFY</button>
                 </div>
-            </ul>
+                <div class="chain-output-container">
+                    <pre id="blockchainOutput">Awaiting investigation...</pre>
+                </div>
+            </div>
+        </section>
 
-        </div>
+    </main>
 
+    <script>
+        const API_INVESTIGATE = "/api/investigate";
 
-    </div>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // --- BOOT SEQUENCE ---
+            setTimeout(() => {
+                const bootScreen = document.getElementById('boot-screen');
+                const appContainer = document.getElementById('app-container');
+                
+                bootScreen.style.opacity = '0';
+                setTimeout(() => {
+                    bootScreen.style.display = 'none';
+                    appContainer.classList.remove('hidden');
+                    appContainer.classList.add('loaded');
+                }, 1200); 
+            }, 2000); 
 
-</div>
+            // --- STATE ---
+            let currentEvidence = null;
 
+            // --- UI HELPERS ---
+            function setNotification(msg) {
+                document.getElementById("systemNotification").textContent = msg;
+            }
 
-<script>
+            function updateCounter(id, number) {
+                document.getElementById(id).textContent = "[" + String(number).padStart(3, "0") + "]";
+            }
 
-    const API_URL =
-        "http://127.0.0.1:8000/api/investigate";
+            // --- FILE INPUT HANDLING ---
+            document.getElementById("imageInput").addEventListener("change", event => {
+                const file = event.target.files[0];
+                document.getElementById("fileName").textContent = file ? file.name : "no_file.jpg";
+                if (file) setNotification(`FILE LOADED: ${file.name}`);
+            });
 
+            // --- MAIN IMAGE PIPELINE ---
+            document.getElementById("runButton").addEventListener("click", async function() {
+                const fileInput = document.getElementById("imageInput");
+                const runButton = document.getElementById("runButton");
 
-    function setStatus(
-        text,
-        processing = false
-    ) {
+                if (fileInput.files.length === 0) {
+                    setNotification("ERROR: NO IMAGE SELECTED.");
+                    return;
+                }
 
-        document
-            .getElementById("statusText")
-            .textContent = text;
+                const formData = new FormData();
+                formData.append("file", fileInput.files[0]);
 
+                runButton.disabled = true;
+                setNotification("PROCESSING IMAGE // EXTRACTING FEATURES...");
+                
+                // Clear old results
+                document.getElementById("profilesList").innerHTML = "";
+                document.getElementById("postsList").innerHTML = "";
+                document.getElementById("linksList").innerHTML = "";
+                
+                try {
+                    const response = await fetch(API_INVESTIGATE, { method: "POST", body: formData });
+                    const data = await response.json();
 
-        const dot =
-            document.getElementById(
-                "statusDot"
-            );
+                    if (!response.ok || !data.success) throw new Error(data.error || data.detail || "Pipeline failed");
 
+                    // FIXED: Pull from data.investigation.results as returned by app.py
+                    const investigation = data.investigation || {};
+                    const resultsArray = investigation.results || data.results || [];
+                    
+                    renderResults(resultsArray);
+                    
+                    currentEvidence = data.evidence || null;
+                    if (currentEvidence) {
+                        document.getElementById("registerButton").disabled = false;
+                        document.getElementById("verifyButton").disabled = false;
+                        document.getElementById("blockchainOutput").textContent = "EVIDENCE PACKAGE GENERATED.\nAWAITING CHAIN REGISTRATION.";
+                    }
 
-        if (processing) {
+                    setNotification(`COMPLETE // FOUND RESULTS`);
+                } catch (error) {
+                    console.error(error);
+                    setNotification(`PIPELINE ERROR: ${error.message}`);
+                } finally {
+                    runButton.disabled = false;
+                }
+            });
 
-            dot.classList.add(
-                "processing"
-            );
+            // --- RESULT RENDERING (ACCORDION BOXES) ---
+            function renderResults(results) {
+                const lists = {
+                    profiles: document.getElementById("profilesList"),
+                    posts: document.getElementById("postsList"),
+                    links: document.getElementById("linksList")
+                };
 
-        } else {
+                let counts = { profiles: 0, posts: 0, links: 0 };
 
-            dot.classList.remove(
-                "processing"
-            );
+                const flatResults = Array.isArray(results) ? results : [];
 
-        }
+                flatResults.forEach((item, index) => {
+                    const url = item.page_url || item.url || item.link || item.image_url || "#";
+                    if (url === "#") return;
 
-    }
+                    const li = document.createElement("li");
+                    li.className = "result-item";
+                    li.style.animationDelay = `${index * 0.05}s`;
+                    
+                    const source = item.source || item.provider || "UNKNOWN";
+                    const scoreRaw = item.similarity_score;
+                    const scoreFormatted = (typeof scoreRaw === "number") ? (scoreRaw * 100).toFixed(1) + "%" : "N/A";
+                    
+                    li.innerHTML = `
+                        <div class="result-summary">
+                            <span class="url-short">${escapeHtml(url)}</span>
+                            <span class="score-badge">[${scoreFormatted}]</span>
+                        </div>
+                        <div class="result-details">
+                            <div><strong>SOURCE:</strong> ${escapeHtml(source)}</div>
+                            <div><strong>TARGET LINK:</strong> <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(url)}</a></div>
+                            ${item.image_url ? `<div><strong>ORIGINAL IMG:</strong> <a href="${escapeHtml(item.image_url)}" target="_blank" rel="noopener noreferrer">View Source Image</a></div>` : ''}
+                            <div><strong>MATCH CONFIDENCE:</strong> ${scoreFormatted}</div>
+                        </div>
+                    `;
 
+                    li.addEventListener("click", function(e) {
+                        if (e.target.tagName.toLowerCase() === 'a') return; 
 
-    async function runPipeline() {
+                        const details = this.querySelector(".result-details");
+                        if (details.style.display === "block") {
+                            details.style.display = "none";
+                            this.classList.remove("expanded");
+                        } else {
+                            details.style.display = "block";
+                            this.classList.add("expanded");
+                        }
+                    });
 
-        const fileInput =
-            document.getElementById(
-                "imageInput"
-            );
+                    const cat = item.category || (isSocialPost(url) ? "social_post" : isSocialProfile(url) ? "social_profile" : "non_social");
+                    if (cat === "social_post") { lists.posts.appendChild(li); counts.posts++; }
+                    else if (cat === "social_profile") { lists.profiles.appendChild(li); counts.profiles++; }
+                    else { lists.links.appendChild(li); counts.links++; }
+                });
 
-        const button =
-            document.getElementById(
-                "runButton"
-            );
+                updateCounter("profilesCount", counts.profiles);
+                updateCounter("postsCount", counts.posts);
+                updateCounter("linksCount", counts.links);
+            }
 
+            // --- CLASSIFIERS ---
+            function isSocialPost(url) {
+                const lower = url.toLowerCase();
+                return lower.includes("/p/") || lower.includes("/reel/") || lower.includes("/status/") || lower.includes("/video/") || lower.includes("/shorts/") || lower.includes("/post/");
+            }
 
-        if (
-            fileInput.files.length === 0
-        ) {
+            function isSocialProfile(url) {
+                const domains = ["instagram.com", "facebook.com", "x.com", "twitter.com", "tiktok.com", "threads.com", "youtube.com", "linkedin.com", "clubhouse.com"];
+                return domains.some(domain => url.toLowerCase().includes(domain));
+            }
 
-            setStatus(
-                "NO FILE SELECTED"
-            );
+            function escapeHtml(value) {
+                const div = document.createElement("div");
+                div.textContent = String(value);
+                return div.innerHTML;
+            }
 
-            return;
-
-        }
-
-
-        const formData =
-            new FormData();
-
-
-        formData.append(
-            "file",
-            fileInput.files[0]
-        );
-
-
-        button.disabled = true;
-
-
-        setStatus(
-            "PROCESSING...",
-            true
-        );
-
-
-        clearResults();
-
-
-        try {
-
-            const response =
-                await fetch(
-                    API_URL,
-                    {
+            // --- BLOCKCHAIN INTEGRATION ---
+            window.registerEvidence = async function() {
+                if (!currentEvidence) return;
+                setNotification("HASHING EVIDENCE // BROADCASTING TO SEPOLIA...");
+                
+                try {
+                    const response = await fetch("/api/blockchain/register", {
                         method: "POST",
-                        body: formData
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ evidence: currentEvidence })
+                    });
+                    const data = await response.json();
+                    
+                    if (!response.ok) throw new Error(data.detail || "Registration failed");
+
+                    document.getElementById("blockchainOutput").textContent = 
+                        `[REGISTERED SECURELY]\n\nHASH: ${data.evidence_hash}\nTX: ${data.transaction_hash}\nBLOCK: ${data.block_number}`;
+                    setNotification("EVIDENCE COMMITTED TO BLOCKCHAIN.");
+                } catch (error) {
+                    setNotification("CHAIN ERROR.");
+                    document.getElementById("blockchainOutput").textContent = `[CHAIN ERROR]\n${error.message}`;
+                }
+            };
+            document.getElementById("registerButton").addEventListener("click", registerEvidence);
+
+            window.verifyEvidence = async function() {
+                if (!currentEvidence) return;
+                setNotification("QUERYING SEPOLIA // VERIFYING HASH...");
+
+                try {
+                    const response = await fetch("/api/blockchain/verify", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ evidence: currentEvidence })
+                    });
+                    const data = await response.json();
+                    
+                    if (!response.ok) throw new Error(data.detail || "Verification failed");
+
+                    if (data.valid) {
+                        document.getElementById("blockchainOutput").textContent = 
+                            `[VERIFIED]\nHASH MATCH CONFIRMED.\n\nHASH: ${data.evidence_hash}\nTIMESTAMP: ${data.blockchain_timestamp}`;
+                        setNotification("INTEGRITY CHECK PASSED.");
+                    } else {
+                        document.getElementById("blockchainOutput").textContent = 
+                            `[FAILED]\nHASH NOT FOUND. EVIDENCE MAY BE COMPROMISED.`;
+                        setNotification("TAMPER DETECTED.");
                     }
-                );
-
-
-            const data =
-                await response.json();
-
-
-            if (!response.ok) {
-
-                throw new Error(
-                    data.error ||
-                    "Backend request failed"
-                );
-
-            }
-
-
-            if (!data.success) {
-
-                throw new Error(
-                    data.error ||
-                    "Pipeline failed"
-                );
-
-            }
-
-
-            renderResults(
-                data.results || []
-            );
-
-
-            setStatus(
-                "ANALYSIS COMPLETE"
-            );
-
-
-        } catch (error) {
-
-            console.error(error);
-
-
-            setStatus(
-                "ERROR"
-            );
-
-
-            document
-                .getElementById(
-                    "externalList"
-                )
-                .innerHTML = `
-                    <div class="empty">
-                        ${error.message}
-                    </div>
-                `;
-
-        } finally {
-
-            button.disabled = false;
-
-        }
-
-    }
-
-
-    function clearResults() {
-
-        document
-            .getElementById(
-                "profilesList"
-            )
-            .innerHTML = "";
-
-
-        document
-            .getElementById(
-                "postsList"
-            )
-            .innerHTML = "";
-
-
-        document
-            .getElementById(
-                "externalList"
-            )
-            .innerHTML = "";
-
-
-        document
-            .getElementById(
-                "profilesCount"
-            )
-            .textContent = "0";
-
-
-        document
-            .getElementById(
-                "postsCount"
-            )
-            .textContent = "0";
-
-
-        document
-            .getElementById(
-                "externalCount"
-            )
-            .textContent = "0";
-
-    }
-
-
-    function isPost(url) {
-
-        if (!url) {
-            return false;
-        }
-
-
-        const lower =
-            url.toLowerCase();
-
-
-        return (
-
-            lower.includes(
-                "/p/"
-            )
-
-            ||
-
-            lower.includes(
-                "/reel/"
-            )
-
-            ||
-
-            lower.includes(
-                "/status/"
-            )
-
-            ||
-
-            lower.includes(
-                "/video/"
-            )
-
-            ||
-
-            lower.includes(
-                "/post/"
-            )
-
-            ||
-
-            lower.includes(
-                "/shorts/"
-            )
-
-            ||
-
-            lower.includes(
-                "/watch?"
-            )
-
-        );
-
-    }
-
-
-    function isSocialMedia(url) {
-
-        if (!url) {
-            return false;
-        }
-
-
-        const domains = [
-
-            "instagram.com",
-
-            "facebook.com",
-
-            "x.com",
-
-            "twitter.com",
-
-            "tiktok.com",
-
-            "threads.com",
-
-            "youtube.com",
-
-            "linkedin.com",
-
-            "clubhouse.com"
-
-        ];
-
-
-        try {
-
-            const hostname =
-                new URL(url)
-                    .hostname
-                    .toLowerCase();
-
-
-            return domains.some(
-                domain =>
-                    hostname === domain
-                    ||
-                    hostname.endsWith(
-                        "." + domain
-                    )
-            );
-
-        } catch {
-
-            return false;
-
-        }
-
-    }
-
-
-    function createResult(
-        item
-    ) {
-
-        const li =
-            document.createElement(
-                "li"
-            );
-
-
-        li.className =
-            "result";
-
-
-        const url =
-            item.page_url
-            ||
-            item.image_url
-            ||
-            "#";
-
-
-        const source =
-            item.source
-            ||
-            item.provider
-            ||
-            "unknown";
-
-
-        const verified =
-            item.verified === true;
-
-
-        const score =
-            typeof item.similarity_score
-                === "number"
-                ? (
-                    item.similarity_score
-                    * 100
-                ).toFixed(1)
-                + "%"
-                : "N/A";
-
-
-        li.innerHTML = `
-
-            <a
-                href="${url}"
-                target="_blank"
-                rel="noopener noreferrer"
-            >
-                ${url}
-            </a>
-
-            <div class="meta">
-
-                <span>
-                    ${source}
-                </span>
-
-                <span
-                    class="${
-                        verified
-                            ? "verified"
-                            : "unverified"
-                    }"
-                >
-                    ${
-                        verified
-                            ? "MATCH"
-                            : "FOUND"
-                    }
-
-                    · ${score}
-
-                </span>
-
-            </div>
-
-        `;
-
-
-        return li;
-
-    }
-
-
-    function renderResults(
-        results
-    ) {
-
-        const profiles =
-            document.getElementById(
-                "profilesList"
-            );
-
-
-        const posts =
-            document.getElementById(
-                "postsList"
-            );
-
-
-        const external =
-            document.getElementById(
-                "externalList"
-            );
-
-
-        let profileCount = 0;
-
-        let postCount = 0;
-
-        let externalCount = 0;
-
-
-        results.forEach(
-            item => {
-
-                const url =
-                    item.page_url
-                    ||
-                    item.image_url
-                    ||
-                    "";
-
-
-                const element =
-                    createResult(
-                        item
-                    );
-
-
-                /*
-                 * Priority:
-                 *
-                 * 1. Social media post
-                 * 2. Social media profile
-                 * 3. External link
-                 */
-
-                if (
-                    isSocialMedia(url)
-                    &&
-                    isPost(url)
-                ) {
-
-                    posts.appendChild(
-                        element
-                    );
-
-                    postCount++;
-
+                } catch (error) {
+                    setNotification("VERIFICATION ERROR.");
+                    document.getElementById("blockchainOutput").textContent = `[VERIFY ERROR]\n${error.message}`;
                 }
-
-                else if (
-                    isSocialMedia(url)
-                ) {
-
-                    profiles.appendChild(
-                        element
-                    );
-
-                    profileCount++;
-
-                }
-
-                else {
-
-                    external.appendChild(
-                        element
-                    );
-
-                    externalCount++;
-
-                }
-
-            }
-        );
-
-
-        if (profileCount === 0) {
-
-            profiles.innerHTML =
-                `<div class="empty">
-                    No profiles found.
-                </div>`;
-
-        }
-
-
-        if (postCount === 0) {
-
-            posts.innerHTML =
-                `<div class="empty">
-                    No posts found.
-                </div>`;
-
-        }
-
-
-        if (externalCount === 0) {
-
-            external.innerHTML =
-                `<div class="empty">
-                    No external links found.
-                </div>`;
-
-        }
-
-
-        document
-            .getElementById(
-                "profilesCount"
-            )
-            .textContent =
-                profileCount;
-
-
-        document
-            .getElementById(
-                "postsCount"
-            )
-            .textContent =
-                postCount;
-
-
-        document
-            .getElementById(
-                "externalCount"
-            )
-            .textContent =
-                externalCount;
-
-    }
-
-</script>
-
+            };
+            document.getElementById("verifyButton").addEventListener("click", verifyEvidence);
+        });
+    </script>
 </body>
-</html>s
+</html>
