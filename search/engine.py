@@ -5,9 +5,10 @@ from search.image_host import upload_image
 from search.normalizer import normalize_candidates
 
 from search.providers.provider_primary import search as searchapi_search
-from search.providers.provider_secondary import search as facefinder_search
-import time
-import requests 
+from search.providers.provider_openwebninja import search as openwebninja_search
+
+import requests
+
 
 def get_candidate_url(candidate: Any) -> str:
     """
@@ -29,7 +30,7 @@ def get_candidate_url(candidate: Any) -> str:
         "src",
         "imageUrl",
         "imageURL",
-        "page_url"  # Fallback to page URL if image is missing
+        "page_url"
     ]
 
     for key in possible_keys:
@@ -48,8 +49,7 @@ def is_valid_candidate(candidate: Any) -> bool:
     """
     if not isinstance(candidate, dict):
         return False
-    
-    # Accept if it has either a valid image link or a valid page profile link
+
     img_url = get_candidate_url(candidate)
     page_url = candidate.get("page_url", "")
 
@@ -87,96 +87,29 @@ def filter_candidates(candidates: List[Any]) -> List[Any]:
 
 def interleave_candidates(
     searchapi_candidates: List[Any],
-    facefinder_candidates: List[Any],
+    openwebninja_candidates: List[Any],
     max_candidates: int,
 ) -> List[Any]:
     combined = []
-    max_length = max(len(searchapi_candidates), len(facefinder_candidates))
+    max_length = max(len(searchapi_candidates), len(openwebninja_candidates))
 
     for index in range(max_length):
         if index < len(searchapi_candidates) and len(combined) < max_candidates:
             combined.append(searchapi_candidates[index])
-        if index < len(facefinder_candidates) and len(combined) < max_candidates:
-            combined.append(facefinder_candidates[index])
+
+        if index < len(openwebninja_candidates) and len(combined) < max_candidates:
+            combined.append(openwebninja_candidates[index])
+
         if len(combined) >= max_candidates:
             break
 
     return combined
 
 
+def run_openwebninja(image_path: str) -> List[Any]:
+    image_url = upload_image(image_path)
+    return openwebninja_search(image_url)
 
-
-
-
-def run_facefinder(image_path: str, max_retries: int = 3, max_poll_attempts: int = 15) -> List[Any]:
-    """
-    FaceFinderAI search with:
-    1. Retry logic for 522/Cloudflare timeouts.
-    2. Asynchronous status polling until progress reaches 100%.
-    """
-    response = None
-    delay = 2
-
-    # ----------------------------------------------------
-    # PHASE 1: Initiate Search with Network Retry Logic
-    # ----------------------------------------------------
-    for attempt in range(1, max_retries + 1):
-        try:
-            response = facefinder_search(image_path)
-            break
-        except Exception as error:
-            error_str = str(error)
-            if "522" in error_str or "timed out" in error_str.lower() or "Connection" in error_str:
-                if attempt < max_retries:
-                    print(f"[Search] FaceFinder 522/Timeout on start (Attempt {attempt}/{max_retries}). Retrying in {delay}s...")
-                    time.sleep(delay)
-                    delay *= 2
-                    continue
-            print(f"[Search] FaceFinder initialization failed: {error}")
-            return []
-
-    if not isinstance(response, dict):
-        return response if isinstance(response, list) else []
-
-    # ----------------------------------------------------
-    # PHASE 2: Asynchronous Polling Loop (Wait for 100%)
-    # ----------------------------------------------------
-    search_id = response.get("id_search")
-    progress = response.get("progress", 0)
-
-    poll_attempts = 0
-    while progress < 100 and poll_attempts < max_poll_attempts:
-        poll_attempts += 1
-        time.sleep(3)  # Wait 3 seconds between status checks
-
-        try:
-            # If the provider module exposes a status checker, use it. 
-            # Otherwise, re-trigger or check status via available method.
-            if search_id and hasattr(facefinder_search, "get_status"):
-                response = facefinder_search.get_status(search_id)
-            elif search_id and hasattr(facefinder_search, "poll"):
-                response = facefinder_search.poll(search_id)
-            else:
-                # Fallback: if no dedicated poll method exists, break out with current response
-                break
-
-            if isinstance(response, dict):
-                progress = response.get("progress", 100)
-                if verbose := True:
-                    print(f"[Search] FaceFinder polling... Status: {response.get('message', 'Processing')} ({progress}%)")
-        except Exception as poll_error:
-            # Swallow minor polling network blips and try next poll cycle
-            continue
-
-    # ----------------------------------------------------
-    # PHASE 3: Extract Final Items
-    # ----------------------------------------------------
-    if isinstance(response, dict):
-        output = response.get("output", {})
-        if isinstance(output, dict):
-            return output.get("items", [])
-
-    return []
 
 def run_searchapi(image_path: str) -> List[Any]:
     image_url = upload_image(image_path)
@@ -189,13 +122,21 @@ def search_image(
     verbose: bool = True,
 ) -> Dict[str, Any]:
 
-    provider_results = {"searchapi": [], "facefinder": []}
-    provider_success = {"searchapi": False, "facefinder": False}
+    provider_results = {
+        "searchapi": [],
+        "openwebninja": []
+    }
+
+    provider_success = {
+        "searchapi": False,
+        "openwebninja": False
+    }
+
     provider_errors = {}
 
     provider_tasks = {
-        "facefinder": run_facefinder,
         "searchapi": run_searchapi,
+        "openwebninja": run_openwebninja,
     }
 
     with ThreadPoolExecutor(max_workers=2) as executor:
@@ -206,31 +147,61 @@ def search_image(
 
         for future in as_completed(futures):
             provider_name = futures[future]
+
             try:
                 results = future.result() or []
                 provider_results[provider_name] = results
                 provider_success[provider_name] = True
 
                 if verbose:
-                    print(f"[Search] {provider_name} returned {len(results)} raw candidates.")
+                    print(
+                        f"[Search] {provider_name} returned "
+                        f"{len(results)} raw candidates."
+                    )
+
             except Exception as error:
                 provider_errors[provider_name] = str(error)
+
                 if verbose:
-                    print(f"[Search] {provider_name} failed: {error}")
+                    print(
+                        f"[Search] {provider_name} failed: {error}"
+                    )
 
-    searchapi_normalized = normalize_candidates(provider_results["searchapi"])
-    facefinder_normalized = normalize_candidates(provider_results["facefinder"])
+    searchapi_normalized = normalize_candidates(
+        provider_results["searchapi"]
+    )
 
-    searchapi_filtered = filter_candidates(searchapi_normalized)
-    facefinder_filtered = filter_candidates(facefinder_normalized)
+    openwebninja_normalized = normalize_candidates(
+        provider_results["openwebninja"]
+    )
+
+    searchapi_filtered = filter_candidates(
+        searchapi_normalized
+    )
+
+    openwebninja_filtered = filter_candidates(
+        openwebninja_normalized
+    )
 
     candidates = interleave_candidates(
-        searchapi_filtered, facefinder_filtered, max_candidates
+        searchapi_filtered,
+        openwebninja_filtered,
+        max_candidates
     )
+
     candidates = deduplicate_candidates(candidates)[:max_candidates]
 
-    searchapi_final_count = sum(1 for c in candidates if c.get("provider", "").startswith("searchapi"))
-    facefinder_final_count = sum(1 for c in candidates if c.get("provider", "").startswith("facefinder"))
+    searchapi_final_count = sum(
+        1
+        for c in candidates
+        if c.get("provider", "").startswith("searchapi")
+    )
+
+    openwebninja_final_count = sum(
+        1
+        for c in candidates
+        if c.get("provider", "").startswith("openwebninja")
+    )
 
     result = {
         "success": any(provider_success.values()),
@@ -243,12 +214,12 @@ def search_image(
                 "after_filtering": len(searchapi_filtered),
                 "final_candidates": searchapi_final_count,
             },
-            "facefinder": {
-                "success": provider_success["facefinder"],
-                "raw_candidates": len(provider_results["facefinder"]),
-                "after_normalization": len(facefinder_normalized),
-                "after_filtering": len(facefinder_filtered),
-                "final_candidates": facefinder_final_count,
+            "openwebninja": {
+                "success": provider_success["openwebninja"],
+                "raw_candidates": len(provider_results["openwebninja"]),
+                "after_normalization": len(openwebninja_normalized),
+                "after_filtering": len(openwebninja_filtered),
+                "final_candidates": openwebninja_final_count,
             },
             "total_final_candidates": len(candidates),
         },
