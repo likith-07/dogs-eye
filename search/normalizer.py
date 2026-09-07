@@ -47,7 +47,7 @@ def normalize_candidates(candidates: List[Any]) -> List[Dict[str, Any]]:
                 "page_url": item.get("link") or item.get("url") or item.get("page_url", ""),
                 "image_url": item.get("thumbnail") or item.get("image") or item.get("image_url", ""),
                 "provider": item.get("provider", "searchapi"),
-                "search_rank": item.get("rank") or item.get("position", "N/A")
+                "search_rank": item.get("search_rank") or item.get("rank") or item.get("position", "N/A")
             }
         
         normalized_list.append(normalized_item)
